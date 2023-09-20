@@ -103,7 +103,7 @@ h1 {
   /* padding: 2px; */
 
   /* border-radius: 7px; */
-  border-radius: 20px;
+  /* border-radius: 20px; */
 
   width: calc(var(--board-size));
   height: calc(var(--board-size));
@@ -119,51 +119,63 @@ h1 {
   height: var(--board-size) / 7;
 }
 
-.place, .peg{
-  /* border: 1px solid var(--gray); */
+.place, .peg, .peg > div {
   width: calc(var(--board-size) / 7 * 0.8);
   height: calc(var(--board-size) / 7 * 0.8);
   border-radius: 50%;
-  /* opacity: 0; */
 }
 
 .place {
-  /* background-color: white; */
   box-sizing: border-box;
   border: 1px solid white;
 }
 
-.peg {
-  display: grid;
+.peg, .peg > div {
+  /* display: grid; */
+  /* place-items: center; */
   position: absolute;
-  place-items: center;
-  opacity: 1;
   cursor: pointer;
   background: white;
-  /* pointer-events: none; */
   transition: opacity 0.3s ease-in-out;
+}
 
-  /* display: none; */
+.peg > div {
+  transition: all 0.2s linear;
+}
+
+.peg::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--board-size) / 7 * 0.1 * -1);
+  right: calc(var(--board-size) / 7 * 0.1 * -1);
+  top: calc(var(--board-size) / 7 * 0.1 * -1);
+  bottom: calc(var(--board-size) / 7 * 0.1 * -1);
+}
+
+.zoom {
+  transform: scale(1.3);
+}
+
+.invisible {
+  /* transition: opacity 0.5s ease; */
+  opacity: 0;
+  /* z-index: -1; */
 }
 
 .removed {
-  /* transition: opacity 0.5s ease-in-out; */
-  opacity: 0;
-}
-
-.selected {
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--gray),
-    var(--gray) 1.5px,
-    #ffffff 1.5px,
-    #ffffff 3px
-  ) !important;
+  display: none;
 }
 
 .move {
   z-index: 100;
-  transition: all 0.5s ease-in-out;
+}
+
+.return {
+  transition: all 0.2s ease-in-out;
+}
+
+.settle {
+  transition: all 0.2s ease-in-out;
 }
 
 #designed {
@@ -223,9 +235,16 @@ h1 {
       height: calc(var(--board-size-big) / 7);
   } 
 
-  .place, .peg {
+  .place, .peg, .peg > div {
     width: calc(var(--board-size-big) / 7 * 0.8);
     height: calc(var(--board-size-big) / 7 * 0.8);
+  }
+
+  .peg::after {
+    left: calc(var(--board-size-big) / 7 * 0.1 * -1);
+    right: calc(var(--board-size-big) / 7 * 0.1 * -1);
+    top: calc(var(--board-size-big) / 7 * 0.1 * -1);
+    bottom: calc(var(--board-size-big) / 7 * 0.1 * -1);
   }
 
   #designed {
