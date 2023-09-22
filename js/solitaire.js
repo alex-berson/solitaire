@@ -46,9 +46,12 @@ const setBoardSize = () => {
 
     let minSide = screen.height > screen.width ? screen.width : window.innerHeight;
     let cssBoardSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--board-size'));
+    let cssPegSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--board-size'));
     let boardSize = Math.ceil(minSide * cssBoardSize / 7) * 7;
+    let pegSize = Math.floor(boardSize / 7 * cssPegSize);
 
     document.documentElement.style.setProperty('--board-size', boardSize + 'px');
+    document.documentElement.style.setProperty('--peg-size', pegSize + 'px');
 }
 
 const fillBoard = () => {
@@ -67,6 +70,9 @@ const fillBoard = () => {
         if (place.classList.contains('empty')) continue;
 
         let rectPeg = pegs[i].getBoundingClientRect();
+
+        // console.log(rectPeg);
+
         let rectPlace = place.getBoundingClientRect();
         let offsetLeft =  rectPlace.left - rectPeg.left;
         let offsetTop =  rectPlace.top - rectPeg.top;
@@ -77,6 +83,119 @@ const fillBoard = () => {
 
         i++;
     }
+}
+
+const newGame = () => {
+
+    let h1 = document.querySelector('h1');
+    let designed = document.querySelector('#designed');
+    let pegs = document.querySelectorAll('.peg:not(.invisible)');
+    let pegs2 = [...document.querySelectorAll('.peg.invisible')];
+    let pegC = document.querySelector(`[data-n="${24}"]`);
+    let places = document.querySelectorAll('.place');
+    let squares = document.querySelectorAll('.square');
+    let event = touchScreen() ? 'touchstart' : 'mousedown';
+    let body = document.body;
+    let i = 0;
+
+    if (pegC) {
+
+        let board = document.querySelector('.board');
+        let peg = document.createElement('div');
+        let pegInner = document.createElement('div');
+
+        peg.appendChild(pegInner);
+        peg.classList.add('peg', 'invisible');
+        board.appendChild(peg);
+        pegs2.push(peg);
+        pegC.classList.add('invisible');
+        pegC.addEventListener('transitionend', e => e.currentTarget.remove(), {once: true});
+    }
+
+    for (let [n, square] of squares.entries()) {
+
+        if (square.children.length == 0) continue;
+        if (!square.firstChild.classList.contains('empty') || n == 24) continue;
+
+        pegs2[i].classList.remove('removed');
+
+        let rectPeg = pegs2[i].getBoundingClientRect();
+        let rectPlace = square.firstChild.getBoundingClientRect();
+        let offsetLeft =  rectPlace.left - rectPeg.left;
+        let offsetTop =  rectPlace.top - rectPeg.top;
+
+        pegs2[i].dataset.n = n;
+        pegs2[i].style.transform = `translate(${offsetLeft}px, ${offsetTop}px)`;
+
+        i++;
+    }
+
+    body.removeEventListener(event, newGame);
+    body.classList.remove('selected');
+    body.classList.remove('selected');
+    h1.classList.remove('disable-text');
+    designed.classList.remove('disable-text');
+
+    pegs.forEach(peg => peg.firstChild.classList.remove('disable'));
+    pegs2.forEach(peg => peg.classList.remove('removed','invisible'));
+    places.forEach(place => place.classList.remove('disable-border'));
+    places.forEach(place => place.classList.remove('empty'));
+
+    places[16].classList.add('empty');
+
+    enableTouch();
+}
+
+const gameOver = () => {
+
+    let h1 = document.querySelector('h1');
+    let designed = document.querySelector('#designed');
+    let pegs = document.querySelectorAll('.peg:not(.invisible)');
+    let places = document.querySelectorAll('.place');
+    let event = touchScreen() ? 'touchstart' : 'mousedown';
+    let body = document.body;
+
+    body.classList.add('selected');
+    h1.classList.add('disable-text');
+    designed.classList.add('disable-text');
+
+    pegs.forEach(peg => peg.firstChild.classList.add('disable'));
+    places.forEach(place => place.classList.add('disable-border'));
+
+    setTimeout(() => body.addEventListener(event, newGame), 1000);
+}
+
+const won = () => {
+
+    let pegs = document.querySelectorAll('.peg:not(.invisible)');
+
+    // if (pegs.length == 30) gameOver();
+
+    return pegs.length == 1;
+}
+
+const lost = () => {
+
+    let pegsEl = document.querySelectorAll('.peg[data-n]');
+    let pegs = Array.from(pegsEl).map(pegEl => Number(pegEl.dataset.n));
+    let places = [...document.querySelectorAll('.square')].map(square => Boolean(square.querySelector('.empty')));
+
+    // console.log(places);
+    // console.log(pegs);
+    // console.log(places[24]);
+    // console.log(Math.abs(26 % 7 - (26 - 2) % 7) == 2, places[26 - 2], !places[26 - 1])
+
+    // if (pegsEl.length == 29) return true; //
+
+    for (let peg of pegs) {
+
+        if (peg - 14 >= 0 && places[peg - 14] && !places[peg - 7]) return false;
+        if (peg + 14 <= 48 && places[peg + 14] && !places[peg + 7]) return false;
+        if (peg - 2 >= 0 && Math.abs(peg % 7 - (peg - 2) % 7) == 2 && places[peg - 2] && !places[peg - 1]) return false;
+        if (peg + 2 <= 48 && Math.abs(peg % 7 - (peg + 2) % 7) == 2 && places[peg + 2] && !places[peg + 1]) return false;
+    }
+
+    return true;
 }
 
 const zoom = (peg) => {
@@ -94,15 +213,6 @@ const removeZoom = (e) => {
 
     peg.firstChild.classList.remove('zoom')
 
-}
-
-const select = (e) => {
-
-    let peg = e.currentTarget;
-
-    console.log(peg);
-
-    zoom(peg);
 }
 
 const startMove = (e) => {
@@ -123,21 +233,7 @@ const startMove = (e) => {
 
         let n = 0;
 
-        console.log(e.currentTarget);
-
-        console.log(e.touches);
-
-        console.log(e.touches[0].target);
-
-        console.log(e.touches[n].target.parentElement);
-
-
-        while (e.currentTarget != e.touches[n].target && e.currentTarget != e.touches[n].target.parentElement) {
-            
-            console.log(n);
-
-            n++;
-        }
+        while (e.currentTarget != e.touches[n].target && e.currentTarget != e.touches[n].target.parentElement) n++;
 
         peg.dataset.x0 = peg.dataset.x = e.touches[n].clientX;
         peg.dataset.y0 = peg.dataset.y = e.touches[n].clientY;
@@ -149,7 +245,6 @@ const startMove = (e) => {
         peg.addEventListener('touchcancel', endMove);
 
     } else {
-
 
         peg.dataset.x0 = peg.dataset.x = e.clientX
         peg.dataset.y0 = peg.dataset.y = e.clientY
@@ -226,7 +321,7 @@ const destSquares = (peg) => {
     // let ox = rectPiece.left + rectPiece.width / 2;
     // let oy = rectPiece.top + rectPiece.height / 2;
 
-    for (let [i, square] of squares.entries()) {
+    for (let square of squares) {
 
         if (square.children.length == 0) continue;
 
@@ -237,6 +332,8 @@ const destSquares = (peg) => {
         destinations.push(square);
     }
 
+    console.log(destinations);
+
     return destinations;
 }
 
@@ -246,7 +343,6 @@ const endMove = () => {
     let peg = document.querySelector('.move');
     let n = Number(peg.dataset.n);
     let squares = destSquares(peg);
-    let place;
 
     disableTouch();
 
@@ -254,11 +350,14 @@ const endMove = () => {
 
         let i = [...squaresEl].indexOf(square);
 
+        console.log(i);
+
+
         if (square.firstChild.classList.contains('empty') &&
            (Math.abs(n - i) == 14 || Math.abs(n - i) == 2 && Math.abs(n % 7 - i % 7) == 2) &&
            !squaresEl[Math.abs(n - i) / 2 + Math.min(i, n)].firstChild.classList.contains('empty')) {
 
-                place = square.firstChild;
+                let place = square.firstChild;
 
                 returnPeg(place);
 
@@ -278,6 +377,10 @@ const endMove = () => {
                     let peg = e.currentTarget;
             
                     peg.classList.add('removed');
+
+                    // peg.classList.remove('invisible');
+
+                    peg.removeAttribute('style');
                         
                 }, {once: true});
 
@@ -285,9 +388,7 @@ const endMove = () => {
         }
     }
 
-    if (place == undefined) {
-        returnPeg();
-    }
+    returnPeg();
 }
 
 const returnPeg = (place = null) => {
@@ -295,12 +396,18 @@ const returnPeg = (place = null) => {
     let peg = document.querySelector('.move');
     let n = Number(peg.dataset.n);
 
-    if (place == null) {
-        place = document.querySelectorAll('.square')[n].firstChild;
-        peg.classList.add('return');        
-    } else {
-        peg.classList.add('settle'); 
-    }
+    // if (place == null) place = document.querySelectorAll('.square')[n].firstChild;
+
+    place = place || document.querySelectorAll('.square')[n].firstChild;
+
+    // if (place == null) {
+    //     place = document.querySelectorAll('.square')[n].firstChild;
+    //     peg.classList.add('return');        
+    // } else {
+    //     peg.classList.add('settle'); 
+    // }
+    
+    peg.classList.add('return'); 
 
     let event = new Event('transitionend');
     let style = window.getComputedStyle(peg);
@@ -323,7 +430,19 @@ const returnPeg = (place = null) => {
 
         peg.classList.remove('settle', 'return', 'move');
 
-        enableTouch();
+        if (won() || lost()) {
+
+            console.log('OVER')
+
+            gameOver();
+            // return;
+        } else {
+
+            console.log('ENABLE')
+            enableTouch();
+        }
+
+        // enableTouch();
 
     }, {once: true});
 
@@ -371,6 +490,8 @@ const init = () => {
     fillBoard();
     showBoard();
     enableTouch();
+
+    // console.log(lost());
 }
 
 window.addEventListener('load', () => document.fonts.ready.then(init));
