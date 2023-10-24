@@ -50,10 +50,6 @@ body {
   margin-right: auto;
 }
 
-.filter {
-  display: none;
-}
-
 h1 {
   font-weight: bold;
   text-align: center;
@@ -70,12 +66,8 @@ h1 {
   margin-top: -10px;
   margin-bottom: 8px;
 
-  transition: color 0.2s linear;
+  transition: color 0.3s linear;
 } 
-
-.rounded-corners {
-  filter: url(#round-corners);
-}
 
 .reset {
   width: calc(var(--board-size) / 10);
@@ -83,7 +75,7 @@ h1 {
   cursor: pointer;
   margin: auto;
   margin-bottom: 12px;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s ease;
   fill: var(--color);
 
   opacity: 0;
@@ -147,7 +139,7 @@ h1 {
 .place {
   box-sizing: border-box;
   border: 1px solid white;
-  transition: border 0.2s linear;
+  transition: border 0.3s linear;
 }
 
 .peg, .peg > div {
@@ -160,7 +152,7 @@ h1 {
 }
 
 .peg > div {
-  transition: all 0.2s linear;
+  transition: all 0.3s linear;
 }
 
 .peg::after {
@@ -182,6 +174,10 @@ h1 {
   /* z-index: -1; */
 }
 
+.pop {
+  transform: scale(1.2);
+}
+
 
 .removed {
   display: none;
@@ -191,12 +187,35 @@ h1 {
   z-index: 100;
 }
 
+.move-ai {
+  transition: all 0.5s ease-in-out;
+}
+
 .return {
   transition: all 0.2s ease-in-out;
 }
 
 .settle {
   transition: all 0.2s ease-in-out;
+}
+
+@keyframes zoom {
+
+  0% {
+    transform: scale(1.0);
+  }
+
+  100% {
+    transform: scale(1.2);
+  }
+}
+
+.zoom-ai {
+  animation: zoom 0.25s 2 linear forwards alternate;
+}
+
+.zoom-ai > div {
+  transition: all 0.5s linear;
 }
 
 #designed {
@@ -212,7 +231,7 @@ h1 {
   margin-top: 10px;
 
 
-  transition: color 0.2s linear;
+  transition: color 0.3s linear;
 }
 
 @media (orientation: landscape) and (max-height: 460px) {
@@ -232,10 +251,6 @@ h1 {
     font-size: 115px;
   }
 
-  .rounded-corners {
-    filter: url(#round-corners-big);
-  }
-
   .reset {
     width: calc(var(--board-size-big) / 10);
     height: calc(var(--board-size-big) / 10);  
@@ -244,6 +259,7 @@ h1 {
   .board {
       width: var(--board-size-big);
       height: var(--board-size-big);
+
       /* border: 15px solid #ebebeb; */
       /* border: 10px solid darkgrey; */
 
@@ -275,4 +291,16 @@ h1 {
     /* margin-top: -16px; */
     line-height: 0.9;
   }
+
+
+  /* h1, #designed, .empty {
+    display: none;
+  } 
+
+  .board {
+    --board-size-big: 385px;
+    border: 1px solid black;
+    padding: 46px;
+    padding: 63.5px;
+  } */
 }

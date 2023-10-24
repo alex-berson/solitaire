@@ -1,52 +1,53 @@
-let board;
+// let board;
+let timer;
 
 const showBoard = () => document.body.style.opacity = 1;
 
 const touchScreen = () => matchMedia('(hover: none)').matches;
 
-const setTitle = () => {
+// const setTitle = () => {
 
-    let title = document.querySelector('h1');
-    let ua = navigator.userAgent;
-    let safari = /Safari/.test(ua) && !/Chrome/.test(ua);
+//     let title = document.querySelector('h1');
+//     let ua = navigator.userAgent;
+//     let safari = /Safari/.test(ua) && !/Chrome/.test(ua);
 
-    try {
+//     try {
 
-        let safariVer = safari ? ua.match(/Version\/([\d.]+)/)[1].split('.').map(Number) : null;
+//         let safariVer = safari ? ua.match(/Version\/([\d.]+)/)[1].split('.').map(Number) : null;
 
-        if (safari && safariVer[0] < 14) title.classList.remove('rounded-corners');
+//         if (safari && safariVer[0] < 14) title.classList.remove('rounded-corners');
 
-    } catch(e) {}
+//     } catch(e) {}
 
-    if (document.URL.startsWith('http://') || document.URL.startsWith('https://')) return;
+//     if (document.URL.startsWith('http://') || document.URL.startsWith('https://')) return;
 
-    if (/(iPhone|iPod|iPad)/.test(ua)) {
+//     if (/(iPhone|iPod|iPad)/.test(ua)) {
 
-        try {
+//         try {
 
-            let osVer = ua.match(/OS ([\d_]+)/)[1].split('_').map(Number);
+//             let osVer = ua.match(/OS ([\d_]+)/)[1].split('_').map(Number);
         
-            if (osVer[0] < 14) title.classList.remove('rounded-corners');
+//             if (osVer[0] < 14) title.classList.remove('rounded-corners');
 
-        } catch(e) {}
+//         } catch(e) {}
 
-        return;
-    }
+//         return;
+//     }
 
-    try {
+//     try {
 
-        let osVer = [...ua.match(/Mac OS X ([\d_]+)/)[1].split('_').map(Number), 0, 0, 0];
+//         let osVer = [...ua.match(/Mac OS X ([\d_]+)/)[1].split('_').map(Number), 0, 0, 0];
 
-        if (osVer[0] == 10 && osVer[1] == 15 && osVer[2] <= 4) title.classList.remove('rounded-corners');
+//         if (osVer[0] == 10 && osVer[1] == 15 && osVer[2] <= 4) title.classList.remove('rounded-corners');
         
-    } catch(e) {}    
-}
+//     } catch(e) {}    
+// }
 
 const setBoardSize = () => {
 
     let minSide = screen.height > screen.width ? screen.width : window.innerHeight;
     let cssBoardSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--board-size'));
-    let cssPegSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--board-size'));
+    let cssPegSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--peg-size'));
     let boardSize = Math.ceil(minSide * cssBoardSize / 7) * 7;
     let pegSize = Math.floor(boardSize / 7 * cssPegSize);
 
@@ -367,6 +368,7 @@ const endMove = () => {
                 let peg2 = document.querySelector(`[data-n="${i2}"]`);
                 
                 peg2.classList.add('invisible');
+                // peg2.firstChild.classList.add('pop');
                 peg2.removeAttribute('data-n');
                 squaresEl[i].firstChild.classList.remove('empty');
                 squaresEl[i2].firstChild.classList.add('empty');
@@ -377,6 +379,8 @@ const endMove = () => {
                     let peg = e.currentTarget;
             
                     peg.classList.add('removed');
+                    // peg.firstChild.classList.remove('pop');
+
 
                     // peg.classList.remove('invisible');
 
@@ -483,15 +487,134 @@ const disableTapZoom = () => {
     document.body.addEventListener(event, preventDefault, {passive: false});
 }
 
+const aiPlay = ({init = true} = {}) => {
+
+    const makeMove = () => {
+
+        let squares = document.querySelectorAll('.square');
+
+        if (moves.length == 0) console.timeEnd('timer2'); //
+
+        if (document.hidden) return;
+        if (moves.length == 0) return;
+
+        let [from, to] = moves.shift();
+
+        switch (orientation) {
+
+            case 0:
+                from[0] = size - 1 - from[0]; 
+                to[0] = size - 1 - to[0]; 
+                break;
+            case 1:
+                [from[0], from[1]] = [from[1], from[0]]; 
+                [to[0], to[1]] = [to[1], to[0]]; 
+                break;
+            case 2:
+                [from[0], from[1]] = [from[1], size - 1 - from[0]]; 
+                [to[0], to[1]] = [to[1], size - 1 - to[0]]; 
+                break;
+            case 3:
+                break;
+        }
+
+        console.log(from, to);
+        console.log(from[0] * size + from[1]);
+
+        let peg = document.querySelector(`.peg[data-n='${from[0] * size + from[1]}']`);
+        let peg2 = document.querySelector(`.peg[data-n='${(from[0] + to[0]) / 2 * size + (from[1] + to[1]) / 2}']`);
+        let style = window.getComputedStyle(peg);
+        let matrix = new DOMMatrix(style.transform);
+        let rectPeg = peg.getBoundingClientRect();
+        let rectPlace = squares[to[0] * size + to[1]].firstChild.getBoundingClientRect();
+
+        peg.dataset.n = to[0] * size + to[1];
+        peg.classList.add('move-ai');
+        peg.firstElementChild.classList.add('zoom-ai');
+        
+        squares[to[0] * size + to[1]].firstChild.classList.remove('empty');
+        squares[from[0] * size + from[1]].firstChild.classList.add('empty');
+        squares[(from[0] + to[0]) / 2 * size + (from[1] + to[1]) / 2].firstChild.classList.add('empty');
+
+        setTimeout(() => {
+            peg2.classList.add('invisible');
+            // peg2.firstChild.classList.add('pop');
+        }, 250);
+
+        peg.addEventListener('animationend', e => {
+
+            let peg = e.currentTarget;
+    
+            peg.classList.remove('move-ai');
+            peg.firstChild.classList.remove('zoom-ai');
+            // peg2.classList.add('invisible');
+            peg2.removeAttribute('data-n');
+
+        }, {once: true});
+
+        peg2.addEventListener('transitionend', e => {
+
+            let peg = e.currentTarget;
+            
+            peg.classList.add('removed');
+            peg.removeAttribute('style');
+
+            // peg.firstChild.classList.remove('pop');
+    
+        }, {once: true});
+    
+        peg.style.transform = `translate(${Math.round(matrix.m41 - (rectPeg.left - rectPlace.left))}px, ${Math.round(matrix.m42 - (rectPeg.top - rectPlace.top))}px)`;
+
+        timer = setTimeout(() => makeMove(), 1000);
+    }
+
+    if (init) {
+        window.addEventListener('visibilitychange', () => {
+            document.hidden ? clearTimeout(timer) : makeMove();
+        });
+    }
+
+
+    console.time('timer2'); //
+
+    let t0 = performance.now();
+
+    let orientation = Math.floor(Math.random() * 4);
+    let moves = dfs();
+
+    let t1 = performance.now();
+
+    console.log(`Finished in ${(t1 - t0) / 1000} seconds`);
+    // console.log(moves.length);
+
+    // alert(`Finished in ${(t1 - t0) / 1000} seconds`);
+
+    // console.log(moves.slice());
+
+    setTimeout(makeMove, 1500 - (t1 - t0));
+}
+
+const aiMode = () => {
+
+    let queryString = window.location.search;
+    let urlParams = new URLSearchParams(queryString);
+    let mode = urlParams.get('mode');
+    
+    return mode == 'ai';
+}
+
 const init = () => {
+
     disableTapZoom();
-    setTitle()
+    // setTitle()
     setBoardSize();
     fillBoard();
     showBoard();
     enableTouch();
 
     // console.log(lost());
+
+    if (aiMode()) setTimeout(aiPlay, 100);
 }
 
 window.addEventListener('load', () => document.fonts.ready.then(init));
