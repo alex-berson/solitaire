@@ -1,17 +1,64 @@
 const size = 7;
 
-const hash = (board) => board.map(r => r.join('')).join('');
+const boardHash = (board) => board.map(r => r.join('')).join('');
 
-const initBoard = () => {
-    
-    return [[0, 0, 1, 1, 1, 0, 0],                     
-            [0, 0, 1, 1, 1, 0, 0],
-            [1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 2, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1],
-            [0, 0, 1, 1, 1, 0, 0],
-            [0, 0, 1, 1, 1, 0, 0]];
-}
+// const hash = (board) => {
+
+//     let str = '';
+
+//     for (let r = 0; r < size; r++) {
+//         for (let c = 0; c < size; c++) {
+//             str += board[r][c];
+//         }
+//     }
+
+//     return str;
+// }
+
+// const hash = (board) => {
+
+//     let strs = []
+
+//     let str = '';
+
+//     for (let r = 0; r < size; r++) {
+//         for (let c = 0; c < size; c++) {
+//             str += board[r][c];
+//         }
+//     }
+
+//     strs.push(str);
+
+//     str = '';
+
+//     for (let c = size - 1 ; c >= 0; c--) {
+//         for (let r = 0; r < size; r++) {
+//             str += board[r][c];
+//         }
+//     }
+
+//     strs.push(str);
+
+//     str = '';
+
+//     for (let r = size - 1 ; r >= 0; r--) {
+//         for (let c = size -1; c >= 0; c--) {
+//             str += board[r][c];
+//         }
+//     }
+
+//     str = '';
+
+//     for (let c = 0 ; c < size; c++) {
+//         for (let r = size - 1; r >= 0; r--) {
+//             str += board[r][c];
+//         }
+//     }
+
+//     strs.push(str);
+
+//     return strs;
+// }
 
 const shuffle = (array) => {
 
@@ -25,18 +72,35 @@ const shuffle = (array) => {
     return array;
 }
 
-const validMoves = (board) => {
+const initBoard = () => {
+    
+    return [[0, 0, 1, 1, 1, 0, 0],                     
+            [0, 0, 1, 1, 1, 0, 0],
+            [1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 2, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 0, 0]];
+}
+
+const availableMoves = (board) => {
 
     let moves = [];
     let dirs = [[-2, 0], [2, 0], [0, -2], [0, 2]];
-    
-    for (let r = 0; r < size; r++) {
 
+    // let rows = shuffle([0,1,2,3,4,5,6]);
+    // let cols = shuffle([0,1,2,3,4,5,6]);
+    // dirs = shuffle(dirs);
+    
+    // for (let r of rows) {
+    //     for (let c of cols) {
+
+    for (let r = 0; r < size; r++) {
         for (let c = 0; c < size; c++) {
 
             if (board[r][c] != 1) continue;
 
-            dirs.forEach(dir => {
+            for (let dir of dirs) {
 
                 let r2 = r + dir[0];
                 let c2 = c + dir[1];
@@ -46,7 +110,7 @@ const validMoves = (board) => {
 
                     moves.push([[r, c],[r2, c2]]);
                 }
-            });
+            }
         }
     }
     // return shuffle(moves);
@@ -55,8 +119,7 @@ const validMoves = (board) => {
 
 const makeMove = (board, move) => {
 
-    let from = move[0];
-    let to = move[1];
+    let [from, to] = move;
 
     board[from[0]][from[1]] = 2;
     board[to[0]][to[1]] = 1;
@@ -64,85 +127,58 @@ const makeMove = (board, move) => {
 }
 
 const dfs = () => {
+
+    console.log('DFS');
         
     let board = initBoard();
-    let visited = new Set();
-    let stack = [{board, moveSequence: []}];
+    let visitedBoards = new Set();
+    let stack = [[board, []]];
+    // let startTime = Date.now();
 
     while (stack.length > 0) {
 
-        let {board, moveSequence} = stack.pop();
-        let boardHash = hash(board);
+        let [board, moveSequence] = stack.pop();
+        let hashKey = boardHash(board);
 
-        if (visited.has(boardHash)) continue;
+        // if (Date.now() - startTime >= 5000) return [];
+        if (visitedBoards.has(hashKey)) continue;
 
-        visited.add(boardHash);
+        visitedBoards.add(hashKey);
 
-        let moves = validMoves(board);
+        let moves = availableMoves(board);
 
         if (moves.length == 0) {
 
-            const nPegs = board.flat().filter(x => x == 1).length;
+            let nPegs = board.flat().filter(x => x == 1).length;
+
+            // let nPegs = 0;
+
+            // for (let r = 0; r < size; r++) {
+            //     for (let c = 0; c < size; c++) {
+            //         if (board[r][c] == 1) nPegs++
+            //     }
+            // }
 
             if (nPegs == 1 && board[3][3] == 1) return moveSequence;
+            // if (nPegs == 1) return moveSequence;
 
             continue;
         }
 
         for (let move of moves) {
 
-            let newBoard = board.map(row => [...row]);
+            // let newBoard = board.map(row => [...row]);
+            let newBoard = board.map(arr => arr.slice());
 
             makeMove(newBoard, move);
 
             let newMoveSequence = moveSequence.concat([move]);
 
-            stack.push({board: newBoard, moveSequence: newMoveSequence});
+            stack.push([newBoard, newMoveSequence]);
         }
     }
 
     return false;
 }
-//     if (isBoardSeen(board)) {
-//         return false;
-//     }
 
-//     markBoardAsSeen(board);
-
-//     const moves = getValidMoves(board);
-//     if (moves.length === 0) {
-//         let pegCount = 0;
-
-//         for (let row = 0; row < board.length; row++) {
-//             for (let col = 0; col < board[row].length; col++) {
-//                 if (board[row][col] == 1) pegCount++;
-//             }
-//         }
-
-//         if (pegCount === 1 && board[3][3] === 1) { // Added condition to check if the last peg is at the center
-//             console.table(board);  // Log the final board state
-//             console.log('Move sequence:', moveSequence);  // Log the move sequence leading to this solution
-//             return true;
-//         }
-//         return false;
-//     }
-
-//     for (const move of moves) {
-
-//         let newBoard = [[],[],[],[],[],[],[]];
-
-//         for (let row = 0; row < board.length; row++) {
-//             for (let col = 0; col < board[row].length; col++) {
-//                 newBoard[row][col] = board[row][col];
-//             }
-//         }
-
-//         applyMove(newBoard, move);
-//         const newMoveSequence = moveSequence.concat([move]);  // Keep track of the move sequence
-//         if (solve(newBoard, newMoveSequence)) {
-//             return true;
-//         }
-//     }
-    
-//     return false;
-// }    
+postMessage(dfs());

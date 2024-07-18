@@ -1,52 +1,12 @@
-// let board;
-let timer;
+
+let size = 7;
 
 const showBoard = () => document.body.style.opacity = 1;
-
-const touchScreen = () => matchMedia('(hover: none)').matches;
-
-// const setTitle = () => {
-
-//     let title = document.querySelector('h1');
-//     let ua = navigator.userAgent;
-//     let safari = /Safari/.test(ua) && !/Chrome/.test(ua);
-
-//     try {
-
-//         let safariVer = safari ? ua.match(/Version\/([\d.]+)/)[1].split('.').map(Number) : null;
-
-//         if (safari && safariVer[0] < 14) title.classList.remove('rounded-corners');
-
-//     } catch(e) {}
-
-//     if (document.URL.startsWith('http://') || document.URL.startsWith('https://')) return;
-
-//     if (/(iPhone|iPod|iPad)/.test(ua)) {
-
-//         try {
-
-//             let osVer = ua.match(/OS ([\d_]+)/)[1].split('_').map(Number);
-        
-//             if (osVer[0] < 14) title.classList.remove('rounded-corners');
-
-//         } catch(e) {}
-
-//         return;
-//     }
-
-//     try {
-
-//         let osVer = [...ua.match(/Mac OS X ([\d_]+)/)[1].split('_').map(Number), 0, 0, 0];
-
-//         if (osVer[0] == 10 && osVer[1] == 15 && osVer[2] <= 4) title.classList.remove('rounded-corners');
-        
-//     } catch(e) {}    
-// }
 
 const setBoardSize = () => {
 
     let minSide = screen.height > screen.width ? screen.width : window.innerHeight;
-    let cssBoardSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--board-size'));
+    let cssBoardSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--board-size')) / 100;
     let cssPegSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--peg-size'));
     let boardSize = Math.ceil(minSide * cssBoardSize / 7) * 7;
     let pegSize = Math.floor(boardSize / 7 * cssPegSize);
@@ -58,7 +18,6 @@ const setBoardSize = () => {
 const fillBoard = () => {
 
     let i = 0;
-    // let places = document.querySelectorAll('.place');
     let squares = document.querySelectorAll('.square');
     let pegs = document.querySelectorAll('.peg');
     
@@ -71,9 +30,6 @@ const fillBoard = () => {
         if (place.classList.contains('empty')) continue;
 
         let rectPeg = pegs[i].getBoundingClientRect();
-
-        // console.log(rectPeg);
-
         let rectPlace = place.getBoundingClientRect();
         let offsetLeft =  rectPlace.left - rectPeg.left;
         let offsetTop =  rectPlace.top - rectPeg.top;
@@ -95,9 +51,12 @@ const newGame = () => {
     let pegC = document.querySelector(`[data-n="${24}"]`);
     let places = document.querySelectorAll('.place');
     let squares = document.querySelectorAll('.square');
-    let event = touchScreen() ? 'touchstart' : 'mousedown';
+    let arrows = document.querySelector('.arrows');
     let body = document.body;
     let i = 0;
+
+    if (pegs.length == 32) return;
+    if (document.querySelector('.move') != null) return;
 
     if (pegC) {
 
@@ -131,7 +90,19 @@ const newGame = () => {
         i++;
     }
 
-    body.removeEventListener(event, newGame);
+    body.removeEventListener('touchstart', newGame);
+    body.removeEventListener('mousedown', newGame);
+
+    arrows.classList.add('blink');
+
+    arrows.addEventListener('animationend', e => {
+        
+        let arrows = e.currentTarget;
+
+        arrows.classList.remove('blink');       
+        
+    }, {once: true});
+
     body.classList.remove('selected');
     body.classList.remove('selected');
     h1.classList.remove('disable-text');
@@ -144,7 +115,7 @@ const newGame = () => {
 
     places[16].classList.add('empty');
 
-    enableTouch();
+    demoMode() ? aiPlay() : enableTouch();
 }
 
 const gameOver = () => {
@@ -153,7 +124,6 @@ const gameOver = () => {
     let designed = document.querySelector('#designed');
     let pegs = document.querySelectorAll('.peg:not(.invisible)');
     let places = document.querySelectorAll('.place');
-    let event = touchScreen() ? 'touchstart' : 'mousedown';
     let body = document.body;
 
     body.classList.add('selected');
@@ -163,7 +133,10 @@ const gameOver = () => {
     pegs.forEach(peg => peg.firstChild.classList.add('disable'));
     places.forEach(place => place.classList.add('disable-border'));
 
-    setTimeout(() => body.addEventListener(event, newGame), 1000);
+    setTimeout(() => {
+        body.addEventListener('touchstart', newGame);  
+        body.addEventListener('mousedown', newGame);  
+    }, 1000);
 }
 
 const won = () => {
@@ -200,9 +173,6 @@ const lost = () => {
 }
 
 const zoom = (peg) => {
-    // peg.firstChild.style.transition = 'transform 0.15s ease-in-out';
-    // peg.firstChild.style.transform += "scale(1.3)";
-
     peg.firstChild.classList.add('zoom')
 }
 
@@ -210,21 +180,14 @@ const removeZoom = (e) => {
 
     let peg = e.currentTarget;
 
-    // peg.firstChild.style.transform = peg.firstChild.style.transform.replace("scale(1.3)", "");
-
     peg.firstChild.classList.remove('zoom')
-
 }
 
 const startMove = (e) => {
 
-    // console.clear();
-
     if (document.querySelector('.move') != null) return;
 
     let peg = e.currentTarget;
-
-    // if (peg.classList.contains('removed')) return;
 
     zoom(peg);
 
@@ -434,60 +397,59 @@ const returnPeg = (place = null) => {
 
         peg.classList.remove('settle', 'return', 'move');
 
-        if (won() || lost()) {
+        // if (lost()) {
 
-            console.log('OVER')
+        //     console.log('OVER')
 
-            gameOver();
-            // return;
-        } else {
+        //     gameOver();
+        //     // return;
+        // } else {
 
-            console.log('ENABLE')
-            enableTouch();
-        }
+        //     console.log('ENABLE')
+        //     enableTouch();
+        // }
 
-        // enableTouch();
+        enableTouch();
 
     }, {once: true});
 
     if (peg.dataset.x0 == peg.dataset.x && peg.dataset.y0 == peg.dataset.y) peg.dispatchEvent(event);
 }
 
-const enableTouch = () => {
+const aiPlay = () => {
 
-    let pegs = document.querySelectorAll('.peg');
-    let events = touchScreen() ? ['touchstart', 'touchend', 'touchcancel'] 
-                               : ['mousedown', 'mouseup', 'mouseleave'];
+    console.log('AI');
 
-    pegs.forEach(peg => {
-        peg.addEventListener(events[0], startMove);
-        peg.addEventListener(events[1], removeZoom);
-        // peg.addEventListener(events[2], removeZoom);
-    });
-}
+    const setVisibilityChange = () => window.addEventListener('visibilitychange', handleVisibilityChange);
 
-const disableTouch = () => {
+    const removeVisibilityChange = () => window.removeEventListener('visibilitychange', handleVisibilityChange);
 
-    let pegs = document.querySelectorAll('.peg');
-    let events = touchScreen() ? ['touchstart', 'touchend', 'touchcancel'] 
-                               : ['mousedown', 'mouseup', 'mouseleave'];
+    const handleVisibilityChange = () => {
 
-    pegs.forEach(peg => {
-        peg.removeEventListener(events[0], startMove);
-        peg.removeEventListener(events[1], removeZoom);
-        // peg.removeEventListener(events[2], removeZoom);
-    });
-}
+        if (document.hidden) {
+            clearTimeout(timer);
+            timer = null;
+        } else {
+            if (timer == null) makeMove();
+        }
+    }
 
-const disableTapZoom = () => {
+    const getMoves = (solution) => {
 
-    const preventDefault = (e) => e.preventDefault();
-    let event = touchScreen() ? 'touchstart' : 'mousedown';
+        let moves = [];
 
-    document.body.addEventListener(event, preventDefault, {passive: false});
-}
+        for (let i = 0; i < solution.length; i += 4) {
 
-const aiPlay = ({init = true} = {}) => {
+            let move = [
+                [Number(solution[i]), Number(solution[i + 1])],
+                [Number(solution[i + 2]), Number(solution[i + 3])]
+            ];
+
+            moves.push(move);
+        }
+
+        return moves;
+    }
 
     const makeMove = () => {
 
@@ -496,30 +458,80 @@ const aiPlay = ({init = true} = {}) => {
         if (moves.length == 0) console.timeEnd('timer2'); //
 
         if (document.hidden) return;
-        if (moves.length == 0) return;
+
+        // if (moves.length == 0) {
+        //     removeVisibilityChange();
+        //     enableReset();    
+        //     return;
+        // }
 
         let [from, to] = moves.shift();
 
+        console.log(orientation);
+
         switch (orientation) {
 
-            case 0:
+            case 'rotate90':
+
                 from[0] = size - 1 - from[0]; 
                 to[0] = size - 1 - to[0]; 
+
                 break;
-            case 1:
+
+            case 'rotate180':
+
                 [from[0], from[1]] = [from[1], from[0]]; 
                 [to[0], to[1]] = [to[1], to[0]]; 
+
                 break;
-            case 2:
+
+            case 'rotate270':
+
                 [from[0], from[1]] = [from[1], size - 1 - from[0]]; 
                 [to[0], to[1]] = [to[1], size - 1 - to[0]]; 
+
                 break;
-            case 3:
+
+            case 'flip':
+
+                from[1] = size - 1 - from[1]; 
+                to[1] = size - 1 - to[1]; 
+
+                break;
+
+            case 'flip90':
+
+                from[1] = size - 1 - from[1]; 
+                to[1] = size - 1 - to[1]; 
+
+                from[0] = size - 1 - from[0]; 
+                to[0] = size - 1 - to[0]; 
+
+                break;
+
+            case 'flip180':
+
+                from[1] = size - 1 - from[1]; 
+                to[1] = size - 1 - to[1];  
+
+                [from[0], from[1]] = [from[1], from[0]]; 
+                [to[0], to[1]] = [to[1], to[0]];
+
+                break;
+
+            case 'flip270':
+
+                from[1] = size - 1 - from[1]; 
+                to[1] = size - 1 - to[1]; 
+
+                [from[0], from[1]] = [from[1], size - 1 - from[0]]; 
+                [to[0], to[1]] = [to[1], size - 1 - to[0]]; 
+
+                break;
+                
+            case 'original':
                 break;
         }
-
-        console.log(from, to);
-        console.log(from[0] * size + from[1]);
 
         let peg = document.querySelector(`.peg[data-n='${from[0] * size + from[1]}']`);
         let peg2 = document.querySelector(`.peg[data-n='${(from[0] + to[0]) / 2 * size + (from[1] + to[1]) / 2}']`);
@@ -539,7 +551,7 @@ const aiPlay = ({init = true} = {}) => {
         setTimeout(() => {
             peg2.classList.add('invisible');
             // peg2.firstChild.classList.add('pop');
-        }, 250);
+        }, 220);
 
         peg.addEventListener('animationend', e => {
 
@@ -565,56 +577,149 @@ const aiPlay = ({init = true} = {}) => {
     
         peg.style.transform = `translate(${Math.round(matrix.m41 - (rectPeg.left - rectPlace.left))}px, ${Math.round(matrix.m42 - (rectPeg.top - rectPlace.top))}px)`;
 
+        if (moves.length == 0) {
+            removeVisibilityChange();
+            setTimeout(enableReset, 500);    
+            return;
+        }
+
         timer = setTimeout(() => makeMove(), 1000);
     }
 
-    if (init) {
-        window.addEventListener('visibilitychange', () => {
-            document.hidden ? clearTimeout(timer) : makeMove();
+    const initWorker = () => {
+
+        webWorker = new Worker('./js/solver.js');
+
+        webWorker.addEventListener('message', e => {
+
+            webWorker.terminate();
+
+            moves = e.data;
+            aiPlay.savedMoves = [...moves];
+
+            console.log(`Finished in ${(Date.now() - startTime) / 1000} seconds`);
+            console.log(moves.length);
+            console.log(moves);
+            // alert(`Finished in ${(Date.now() - startTime) / 1000} seconds`);
+
+            // setTimeout(makeMove, 1000 - (Date.now() - startTime));
+
+            return moves;
         });
     }
 
+    let startTime =  Date.now();
+    let queryString = window.location.search;
+    let urlParams = new URLSearchParams(queryString);
+    let type = urlParams.get('type');
+    let moves, webWorker, timer, orientation;
+    let orientations = ['original', 'rotate90', 'rotate180', 'rotate270', 'flip', 'flip90', 'flip180', 'flip270'];
+    let easySolution = '1333252304243414020404245434464443452646464441436242325264626242123220222321402020224341412121232325254545433335533332343533';
+    let fastSolution = '3133523240424341454364443454626464442242022214343454545252323212204040424244262423254626262404020222212323252545454343231333';
+    let solutions = {'easy':easySolution,'fast':fastSolution};
 
-    console.time('timer2'); //
+    document.documentElement.style.setProperty('--non-demo', 0);
 
-    let t0 = performance.now();
+    setVisibilityChange();
+    disableReset();
+    disableTouch();
 
-    let orientation = Math.floor(Math.random() * 4);
-    let moves = dfs();
+    if (type == 'ai') {
 
-    let t1 = performance.now();
+        orientation = orientations[Math.floor(Math.random() * 8)];
 
-    console.log(`Finished in ${(t1 - t0) / 1000} seconds`);
-    // console.log(moves.length);
+        moves = aiPlay.savedMoves == undefined ? initWorker() : [...aiPlay.savedMoves];
 
-    // alert(`Finished in ${(t1 - t0) / 1000} seconds`);
+    } else {
 
-    // console.log(moves.slice());
+        orientation = orientations[0];
 
-    setTimeout(makeMove, 1500 - (t1 - t0));
+        moves = getMoves(solutions[type]);
+    }
+
+    setTimeout(makeMove, 1000 - (Date.now() - startTime));
 }
 
-const aiMode = () => {
+const demoMode = () => {
 
     let queryString = window.location.search;
     let urlParams = new URLSearchParams(queryString);
     let mode = urlParams.get('mode');
     
-    return mode == 'ai';
+    return mode == 'demo';
+
+    // return true;
+}
+
+const enableReset = () => {
+
+    let button = document.querySelector('.reset');
+
+    button.classList.add('enabled');
+    button.addEventListener('touchstart', newGame);
+    button.addEventListener('mousedown', newGame);
+}
+
+const disableReset = () => {
+
+    let button = document.querySelector('.reset');
+
+    button.classList.remove('enabled');
+    button.removeEventListener('touchstart', newGame);
+    button.removeEventListener('mousedown', newGame);
+}
+
+const enableTouch = () => {
+
+    let pegs = document.querySelectorAll('.peg');
+    
+    pegs.forEach(peg => {
+
+        peg.addEventListener('touchstart', startMove);
+        peg.addEventListener('touchend', removeZoom);
+        // peg.addEventListener('touchcancel', removeZoom);
+
+        peg.addEventListener('mousedown', startMove);
+        peg.addEventListener('mouseup', removeZoom);
+        // peg.addEventListener('mouseleave', removeZoom);
+    });
+}
+
+const disableTouch = () => {
+
+    let pegs = document.querySelectorAll('.peg');
+
+    pegs.forEach(peg => {
+        peg.removeEventListener('touchstart', startMove);
+        peg.removeEventListener('touchend', removeZoom);
+        // peg.removeEventListener('touchcancel', removeZoom);
+
+        peg.removeEventListener('mousedown', startMove);
+        peg.removeEventListener('mouseup', removeZoom);
+        // peg.removeEventListener('mouseleave', removeZoom);
+    });
+}
+
+const disableTapZoom = () => {
+
+    const preventDefault = (e) => e.preventDefault();
+
+    document.body.addEventListener('touchstart', preventDefault, {passive: false});
+    document.body.addEventListener('mousedown', preventDefault, {passive: false});
 }
 
 const init = () => {
 
     disableTapZoom();
-    // setTitle()
     setBoardSize();
     fillBoard();
     showBoard();
+    enableReset();
     enableTouch();
 
-    // console.log(lost());
+    console.log(demoMode());
 
-    if (aiMode()) setTimeout(aiPlay, 100);
+    if (demoMode()) setTimeout(aiPlay, 0);
 }
 
-window.addEventListener('load', () => document.fonts.ready.then(init));
+window.onload = () => document.fonts.ready.then(init);
