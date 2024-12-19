@@ -1,7 +1,6 @@
+const showBoard = () => document.body.classList.add('visible');
 
-let size = 7;
-
-const showBoard = () => document.body.style.opacity = 1;
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const setBoardSize = () => {
 
@@ -10,199 +9,58 @@ const setBoardSize = () => {
     let cssPegSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--peg-size'));
     let boardSize = Math.ceil(minSide * cssBoardSize / 7) * 7;
     let pegSize = Math.floor(boardSize / 7 * cssPegSize);
+    let gapSize = Math.floor(boardSize / 7 * (1 - cssPegSize));
 
-    document.documentElement.style.setProperty('--board-size', boardSize + 'px');
-    document.documentElement.style.setProperty('--peg-size', pegSize + 'px');
+    document.documentElement.style.setProperty('--board-size', `${boardSize}px`);
+    document.documentElement.style.setProperty('--peg-size', `${pegSize}px`);
+    document.documentElement.style.setProperty('--gap-size', `${gapSize}px`);
 }
 
 const fillBoard = () => {
 
-    let i = 0;
-    let squares = document.querySelectorAll('.square');
-    let pegs = document.querySelectorAll('.peg');
-    
-    for (let [n, square] of squares.entries()) {
+    let holes = document.querySelectorAll('.hole');
+    let pegs = [...document.querySelectorAll('.peg')];
 
-        if (square.children.length == 0) continue;
+    for (let [n, hole] of holes.entries()) {
 
-        let place = square.firstChild;
+        if (hole.matches('.hidden, .empty')) continue;
 
-        if (place.classList.contains('empty')) continue;
+        let peg = pegs.shift();
+        let pegRect = peg.getBoundingClientRect();
+        let holeRect = hole.getBoundingClientRect();
+        let offsetLeft = holeRect.left - pegRect.left;
+        let offsetTop = holeRect.top - pegRect.top;
 
-        let rectPeg = pegs[i].getBoundingClientRect();
-        let rectPlace = place.getBoundingClientRect();
-        let offsetLeft =  rectPlace.left - rectPeg.left;
-        let offsetTop =  rectPlace.top - rectPeg.top;
+        peg.dataset.n = n;
 
-        pegs[i].dataset.n = n;
-
-        pegs[i].style.transform = `translate(${offsetLeft}px, ${offsetTop}px)`;
-
-        i++;
+        peg.style.transform = `translate(${offsetLeft}px, ${offsetTop}px)`;
     }
-}
-
-const newGame = () => {
-
-    let h1 = document.querySelector('h1');
-    let designed = document.querySelector('#designed');
-    let pegs = document.querySelectorAll('.peg:not(.invisible)');
-    let pegs2 = [...document.querySelectorAll('.peg.invisible')];
-    let pegC = document.querySelector(`[data-n="${24}"]`);
-    let places = document.querySelectorAll('.place');
-    let squares = document.querySelectorAll('.square');
-    let arrows = document.querySelector('.arrows');
-    let body = document.body;
-    let i = 0;
-
-    if (pegs.length == 32) return;
-    if (document.querySelector('.move') != null) return;
-
-    if (pegC) {
-
-        let board = document.querySelector('.board');
-        let peg = document.createElement('div');
-        let pegInner = document.createElement('div');
-
-        peg.appendChild(pegInner);
-        peg.classList.add('peg', 'invisible');
-        board.appendChild(peg);
-        pegs2.push(peg);
-        pegC.classList.add('invisible');
-        pegC.addEventListener('transitionend', e => e.currentTarget.remove(), {once: true});
-    }
-
-    for (let [n, square] of squares.entries()) {
-
-        if (square.children.length == 0) continue;
-        if (!square.firstChild.classList.contains('empty') || n == 24) continue;
-
-        pegs2[i].classList.remove('removed');
-
-        let rectPeg = pegs2[i].getBoundingClientRect();
-        let rectPlace = square.firstChild.getBoundingClientRect();
-        let offsetLeft =  rectPlace.left - rectPeg.left;
-        let offsetTop =  rectPlace.top - rectPeg.top;
-
-        pegs2[i].dataset.n = n;
-        pegs2[i].style.transform = `translate(${offsetLeft}px, ${offsetTop}px)`;
-
-        i++;
-    }
-
-    body.removeEventListener('touchstart', newGame);
-    body.removeEventListener('mousedown', newGame);
-
-    arrows.classList.add('blink');
-
-    arrows.addEventListener('animationend', e => {
-        
-        let arrows = e.currentTarget;
-
-        arrows.classList.remove('blink');       
-        
-    }, {once: true});
-
-    body.classList.remove('selected');
-    body.classList.remove('selected');
-    h1.classList.remove('disable-text');
-    designed.classList.remove('disable-text');
-
-    pegs.forEach(peg => peg.firstChild.classList.remove('disable'));
-    pegs2.forEach(peg => peg.classList.remove('removed','invisible'));
-    places.forEach(place => place.classList.remove('disable-border'));
-    places.forEach(place => place.classList.remove('empty'));
-
-    places[16].classList.add('empty');
-
-    demoMode() ? aiPlay() : enableTouch();
-}
-
-const gameOver = () => {
-
-    let h1 = document.querySelector('h1');
-    let designed = document.querySelector('#designed');
-    let pegs = document.querySelectorAll('.peg:not(.invisible)');
-    let places = document.querySelectorAll('.place');
-    let body = document.body;
-
-    body.classList.add('selected');
-    h1.classList.add('disable-text');
-    designed.classList.add('disable-text');
-
-    pegs.forEach(peg => peg.firstChild.classList.add('disable'));
-    places.forEach(place => place.classList.add('disable-border'));
-
-    setTimeout(() => {
-        body.addEventListener('touchstart', newGame);  
-        body.addEventListener('mousedown', newGame);  
-    }, 1000);
-}
-
-const won = () => {
-
-    let pegs = document.querySelectorAll('.peg:not(.invisible)');
-
-    // if (pegs.length == 30) gameOver();
-
-    return pegs.length == 1;
-}
-
-const lost = () => {
-
-    let pegsEl = document.querySelectorAll('.peg[data-n]');
-    let pegs = Array.from(pegsEl).map(pegEl => Number(pegEl.dataset.n));
-    let places = [...document.querySelectorAll('.square')].map(square => Boolean(square.querySelector('.empty')));
-
-    // console.log(places);
-    // console.log(pegs);
-    // console.log(places[24]);
-    // console.log(Math.abs(26 % 7 - (26 - 2) % 7) == 2, places[26 - 2], !places[26 - 1])
-
-    // if (pegsEl.length == 29) return true; //
-
-    for (let peg of pegs) {
-
-        if (peg - 14 >= 0 && places[peg - 14] && !places[peg - 7]) return false;
-        if (peg + 14 <= 48 && places[peg + 14] && !places[peg + 7]) return false;
-        if (peg - 2 >= 0 && Math.abs(peg % 7 - (peg - 2) % 7) == 2 && places[peg - 2] && !places[peg - 1]) return false;
-        if (peg + 2 <= 48 && Math.abs(peg % 7 - (peg + 2) % 7) == 2 && places[peg + 2] && !places[peg + 1]) return false;
-    }
-
-    return true;
-}
-
-const zoom = (peg) => {
-    peg.firstChild.classList.add('zoom')
-}
-
-const removeZoom = (e) => {
-
-    let peg = e.currentTarget;
-
-    peg.firstChild.classList.remove('zoom')
 }
 
 const startMove = (e) => {
 
-    if (document.querySelector('.move') != null) return;
-
     let peg = e.currentTarget;
 
-    zoom(peg);
+    if (peg.classList.contains('invisible') || document.querySelector('.move')) return;
 
-    peg.classList.add('move');
+    // if (peg.matches('.invisible, .settle') || document.querySelector('.move')) return;
+
+    // disableReset();
+
+    peg.classList.add('move', 'zoom');
+
+    // peg.classList.add('move');
+
+    peg.classList.remove('settle'); //
+    // peg.firstChild.style.transform += 'scale(1.3)'; //
+
 
     if (e.type == 'touchstart') {
 
-        let n = 0;
-
-        while (e.currentTarget != e.touches[n].target && e.currentTarget != e.touches[n].target.parentElement) n++;
+        let n = [...e.touches].findIndex(touch => e.currentTarget == touch.target);
 
         peg.dataset.x0 = peg.dataset.x = e.touches[n].clientX;
         peg.dataset.y0 = peg.dataset.y = e.touches[n].clientY;
-
-        // piece.addEventListener('pointermove', mouseMove);
 
         peg.addEventListener('touchmove', touchMove);
         peg.addEventListener('touchend', endMove);
@@ -212,8 +70,6 @@ const startMove = (e) => {
 
         peg.dataset.x0 = peg.dataset.x = e.clientX
         peg.dataset.y0 = peg.dataset.y = e.clientY
-
-        // document.addEventListener('pointermove', mouseMove);
 
         document.addEventListener('mousemove', mouseMove);
         document.addEventListener('mouseup', endMove);
@@ -225,162 +81,143 @@ const touchMove = (e) => {
     let peg = e.currentTarget;
     let style = window.getComputedStyle(peg);
     let matrix = new DOMMatrix(style.transform);
-
-    let n = 0;
-    
-    while (e.currentTarget != e.touches[n].target && e.currentTarget != e.touches[n].target.parentElement) n++;
-
+    let n = [...e.touches].findIndex(touch => e.currentTarget == touch.target);
     let dx = e.touches[n].clientX - peg.dataset.x;
     let dy = e.touches[n].clientY - peg.dataset.y;
 
     peg.dataset.x = e.touches[n].clientX;
     peg.dataset.y = e.touches[n].clientY;
 
-    // let offsetLeft =  piece.dataset.x - piece.dataset.x0;
-    // let offsetTop =  piece.dataset.y - piece.dataset.y0;
-
-    // piece.style.transform = `translate(${offsetLeft}px, ${offsetTop}px)`;
-
     peg.style.transform = `translate(${matrix.m41 + dx}px, ${matrix.m42 + dy}px)`;
 }
 
 const mouseMove = (e) => {
 
-    // let squares = document.querySelectorAll('.square');
-
     let peg = document.querySelector('.move');
-
     let style = window.getComputedStyle(peg);
     let matrix = new DOMMatrix(style.transform);
     let dx = e.clientX - peg.dataset.x;
     let dy = e.clientY - peg.dataset.y;
 
-    // console.log(e.clientX,e.clientY);
-    // console.log(dx,dy);
-    // console.log(matrix.m41, matrix.m42)
-
-
     peg.dataset.x = e.clientX;
     peg.dataset.y = e.clientY;
 
     peg.style.transform = `translate(${matrix.m41 + dx}px, ${matrix.m42 + dy}px)`;
-
-    // let offsetLeft =  piece.dataset.x - piece.dataset.x0;
-    // let offsetTop =  piece.dataset.y - piece.dataset.y0;
-    // piece.style.transform = `translate(${offsetLeft}px, ${offsetTop}px)`;
-
-
-    // let rectPiece = piece.getBoundingClientRect();
-    // let rectSquare = squares[0].getBoundingClientRect();
-
-    // console.log(rectSquare.left, rectSquare.top);
-    // console.log(rectPiece.left, rectPiece.top);
 }
 
-const destSquares = (peg) => {
+const getDestHoles = (peg) => {
 
     let destinations = [];
-    let squares = document.querySelectorAll('.square');
-    let rectPeg = peg.getBoundingClientRect();
-    // let ox = rectPiece.left + rectPiece.width / 2;
-    // let oy = rectPiece.top + rectPiece.height / 2;
+    let pegRect = peg.getBoundingClientRect();
+    let holes = document.querySelectorAll('.hole');
 
-    for (let square of squares) {
+    for (let hole of holes) {
 
-        if (square.children.length == 0) continue;
+        if (!hole.classList.contains('empty')) continue;
 
-        let rectSquare = square.getBoundingClientRect();
+        let holeRect = hole.getBoundingClientRect();
 
-        if (rectPeg.right < rectSquare.left || rectPeg.left > rectSquare.right || rectPeg.bottom < rectSquare.top || rectPeg.top > rectSquare.bottom) continue;
+        if (pegRect.right < holeRect.left ||
+            pegRect.left > holeRect.right ||
+            pegRect.bottom < holeRect.top ||
+            pegRect.top > holeRect.bottom) continue;
 
-        destinations.push(square);
+        destinations.push(hole);
     }
-
-    console.log(destinations);
 
     return destinations;
 }
 
 const endMove = () => {
 
-    let squaresEl = document.querySelectorAll('.square');
+    let holes = document.querySelectorAll('.hole');
     let peg = document.querySelector('.move');
-    let n = Number(peg.dataset.n);
-    let squares = destSquares(peg);
-
-    disableTouch();
-
-    for (let square of squares) {
-
-        let i = [...squaresEl].indexOf(square);
-
-        console.log(i);
+    let i1 = Number(peg.dataset.n);
+    let destHoles = getDestHoles(peg);
 
 
-        if (square.firstChild.classList.contains('empty') &&
-           (Math.abs(n - i) == 14 || Math.abs(n - i) == 2 && Math.abs(n % 7 - i % 7) == 2) &&
-           !squaresEl[Math.abs(n - i) / 2 + Math.min(i, n)].firstChild.classList.contains('empty')) {
+    // disableTouch();
 
-                let place = square.firstChild;
+    for (let hole of destHoles) {
 
-                returnPeg(place);
+        let i2 = [...holes].indexOf(hole);
+        let i0 = Math.abs(i1 - i2) / 2 + Math.min(i1, i2);
+        let peg0 = document.querySelector(`[data-n="${i0}"]`);
 
-                peg.dataset.n = i;
+        if ((Math.abs(i1 - i2) == 14 ||
+            (Math.abs(i1 - i2) == 2 && Math.abs(i1 % 7 - i2 % 7) == 2)) &&
+            peg0 != null) {
 
-                let i2 = Math.abs(n - i) / 2 + Math.min(i, n);
-                let peg2 = document.querySelector(`[data-n="${i2}"]`);
-                
-                peg2.classList.add('invisible');
-                // peg2.firstChild.classList.add('pop');
-                peg2.removeAttribute('data-n');
-                squaresEl[i].firstChild.classList.remove('empty');
-                squaresEl[i2].firstChild.classList.add('empty');
-                squaresEl[n].firstChild.classList.add('empty');
+            // placePeg(hole);
 
-                peg2.addEventListener('transitionend', e => {
+            peg.dataset.n = i2;
+            peg0.classList.add('invisible');
+            peg0.removeAttribute('data-n');
 
-                    let peg = e.currentTarget;
+            holes[i0].classList.add('empty');
+            holes[i1].classList.add('empty');
+            holes[i2].classList.remove('empty');
             
-                    peg.classList.add('removed');
-                    // peg.firstChild.classList.remove('pop');
+            peg0.addEventListener('transitionend', () => {
+        
+                peg0.classList.add('hidden');
+                peg0.removeAttribute('style');
 
+                // if (!gameWon() && !gameLost()) enableReset();
+                    
+            }, {once: true});
 
-                    // peg.classList.remove('invisible');
+            placePeg(hole, gameLost() || gameWon());
 
-                    peg.removeAttribute('style');
-                        
-                }, {once: true});
+            // if (gameLost() || gameWon()) disableTouch(); //
 
-                return;
+            // placePeg(hole);
+
+            // console.log(gameLost(), gameWon());
+
+            // if (gameLost() || gameWon())  endGame();
+
+            return;
         }
     }
 
-    returnPeg();
+    placePeg();
+
+    // await placePeg();
+    // enableReset();
 }
 
-const returnPeg = (place = null) => {
-        
-    let peg = document.querySelector('.move');
+const placePeg = async (hole = null, end = false) => {
+
+    let peg = document.querySelector('.move, .zoom');
+
+    if (peg == null) return;
+    if (end) disableTouch();
+
     let n = Number(peg.dataset.n);
+    let hole0 = document.querySelectorAll('.hole')[n];
 
-    // if (place == null) place = document.querySelectorAll('.square')[n].firstChild;
+    if (hole == null || hole instanceof Event) hole = hole0;
 
-    place = place || document.querySelectorAll('.square')[n].firstChild;
+    // console.log(gameLost(), gameWon());
 
-    // if (place == null) {
-    //     place = document.querySelectorAll('.square')[n].firstChild;
-    //     peg.classList.add('return');        
-    // } else {
-    //     peg.classList.add('settle'); 
-    // }
-    
-    peg.classList.add('return'); 
+    peg.classList.add('settle'); 
+    peg.classList.remove('zoom', 'move');
 
-    let event = new Event('transitionend');
+    // console.log(peg.firstChild.style.transform);
+
+    // peg.firstChild.style.transform = peg.firstChild.style.transform.replace('scale(1.3)', '');
+
+    // peg.classList.remove('move'); //
+
+    // if (!gameWon() && !gameLost()) enableTouch(); //
+
     let style = window.getComputedStyle(peg);
     let matrix = new DOMMatrix(style.transform);
-    let rectPeg = peg.getBoundingClientRect();
-    let rectPlace = place.getBoundingClientRect();
+    let pegRect = peg.getBoundingClientRect();
+    let holeRect = hole.getBoundingClientRect();
+    let offsetLeft = pegRect.left - holeRect.left;
+    let offsetTop = pegRect.top - holeRect.top;
 
     peg.removeEventListener('touchmove', touchMove);
     document.removeEventListener('mousemove', mouseMove);
@@ -389,50 +226,209 @@ const returnPeg = (place = null) => {
     peg.removeEventListener('touchcancel', endMove);
     document.removeEventListener('mouseup', endMove);
 
-    peg.style.transform = `translate(${Math.round(matrix.m41 - (rectPeg.left - rectPlace.left))}px, ${Math.round(matrix.m42 - (rectPeg.top - rectPlace.top))}px)`;
+    peg.style.transform = `translate(${matrix.m41 - offsetLeft}px, ${matrix.m42 - offsetTop}px)`;
 
-    peg.addEventListener('transitionend', e => {
+    // await new Promise(resolve => {
 
-        let peg = e.currentTarget;
+        peg.addEventListener('transitionend', () => {
 
-        peg.classList.remove('settle', 'return', 'move');
+            // peg.classList.remove('settle', 'move');
+            peg.classList.remove('settle');
 
-        // if (lost()) {
+            if (end) endGame();
 
-        //     console.log('OVER')
+            // if (!gameWon() && !gameLost()) enableReset();
 
-        //     gameOver();
-        //     // return;
-        // } else {
+            // resolve();
+    
+            // (gameLost() || gameWon()) ? endGame() : enableTouch();
 
-        //     console.log('ENABLE')
-        //     enableTouch();
-        // }
+            // console.log(gameLost(), gameWon());
 
-        enableTouch();
+            // console.log(gameLost(), gameWon());
 
-    }, {once: true});
+            // if (gameLost() || gameWon())  endGame();
 
-    if (peg.dataset.x0 == peg.dataset.x && peg.dataset.y0 == peg.dataset.y) peg.dispatchEvent(event);
+        }, {once: true});
+    // });
 }
 
-const aiPlay = () => {
+const gameWon = () => {
 
-    console.log('AI');
+    let pegs = document.querySelectorAll('.peg:not(.invisible)');
 
-    const setVisibilityChange = () => window.addEventListener('visibilitychange', handleVisibilityChange);
+    return pegs.length == 1;
 
-    const removeVisibilityChange = () => window.removeEventListener('visibilitychange', handleVisibilityChange);
+    // return true;
+}
 
-    const handleVisibilityChange = () => {
+const gameLost = () => {
 
-        if (document.hidden) {
-            clearTimeout(timer);
-            timer = null;
-        } else {
-            if (timer == null) makeMove();
-        }
+    // let pegsEl = [...document.querySelectorAll('.peg[data-n]')];
+    let pegsEl = [...document.querySelectorAll('.peg[data-n]:not(.invisible)')];
+    let pegs = pegsEl.map(pegEl => Number(pegEl.dataset.n));
+    let holesEl = [...document.querySelectorAll('.hole')];
+    let holes = holesEl.map(hole => Boolean(hole.classList.contains('empty')));
+
+    // return true;
+
+    for (let peg of pegs) {
+
+        if ((peg - 14 >= 0 && holes[peg - 14] && !holes[peg - 7]) ||
+            (peg + 14 <= 48 && holes[peg + 14] && !holes[peg + 7]) ||
+            (peg - 2 >= 0 && Math.abs(peg % 7 - (peg - 2) % 7) == 2 && 
+                holes[peg - 2] && !holes[peg - 1]) ||
+            (peg + 2 <= 48 && Math.abs(peg % 7 - (peg + 2) % 7) == 2 &&
+                holes[peg + 2] && !holes[peg + 1])) return false;
     }
+
+    return pegsEl.length != 1;
+}
+
+const endGame = async () => {
+
+    let peg = document.querySelector('.peg:not(.invisible)');
+
+    if (gameLost()) {
+
+        document.body.classList.add('lost');
+
+        peg.addEventListener('transitionend', () => {
+
+            document.body.addEventListener('touchstart', resetGame);
+            document.body.addEventListener('mousedown', resetGame);
+
+            enableReset();
+
+        }, {once: true});
+
+    } else {
+
+        await sleep(200);
+
+        peg.classList.add('zoom-win')
+
+        peg.addEventListener('animationend', () => {
+            
+            document.body.addEventListener('touchstart', resetGame);
+            document.body.addEventListener('mousedown', resetGame);
+            
+            peg.classList.remove('zoom-win');
+            
+            enableReset();
+
+
+            let event = new Event('touchstart', {bubbles: true, cancelable: true}); //
+
+            setTimeout(() => document.body.dispatchEvent(event), 1500); //
+            
+        }, {once: true});
+    }
+}
+
+const resetGame = (e) => {
+
+    const enabled = () => {
+
+        let invisible = document.querySelector('.peg.invisible:not(.hidden)');
+        let hidden = document.querySelector('.peg.hidden');
+        let move = document.querySelector('.move, .settle');
+
+        if (invisible || !hidden || move) return false;
+
+        return true;
+    } 
+
+    let arrows = document.querySelector('.arrows');
+    let holes = document.querySelectorAll('.hole');
+    let pegs = [...document.querySelectorAll('.peg.invisible')];
+    let centralPeg = document.querySelector(`[data-n="${24}"]`);
+
+    if (!enabled()) return;
+
+    // if (pegs.length == 0) return;
+
+    if (e.currentTarget.classList.contains('reset') && !demoMode()) {
+
+        arrows.classList.add('blink');
+
+        arrows.addEventListener('animationend', () => arrows.classList.remove('blink'), {once: true});
+    }
+
+    if (centralPeg != null) {
+
+        let board = document.querySelector('.board');
+        let peg = document.createElement('div');
+        let div = document.createElement('div');
+
+        peg.appendChild(div);
+        peg.classList.add('peg', 'invisible');
+        board.appendChild(peg);
+        pegs.push(peg);
+
+        centralPeg.classList.add('invisible');
+        centralPeg.addEventListener('transitionend', () => centralPeg.remove(), {once: true});
+
+        holes[24].classList.add('empty');
+    }
+
+    for (let [n, hole] of holes.entries()) {
+
+        if (n == 24 || !hole.classList.contains('empty')) continue;
+
+        let peg = pegs.shift();
+        let pegRect = peg.getBoundingClientRect();
+        let holeRect = hole.getBoundingClientRect();
+        let offsetLeft = holeRect.left - pegRect.left;
+        let offsetTop = holeRect.top - pegRect.top;
+
+        peg.classList.remove('hidden', 'invisible');
+
+        peg.dataset.n = n;
+        peg.style.transform = `translate(${offsetLeft}px, ${offsetTop}px)`;
+
+        hole.classList.remove('empty');
+    }
+
+    document.body.removeEventListener('touchstart', resetGame);
+    document.body.removeEventListener('mousedown', resetGame);
+
+    document.body.classList.remove('lost');
+
+    if (demoMode()) {
+
+        disableReset();
+        aiPlay(false);
+
+        return;
+    }
+
+    enableTouch();
+}
+
+const aiPlay = async (init = true) => {
+
+    // const setVisibilityChange = () => {
+    //     window.addEventListener('visibilitychange', handleVisibilityChange);
+    // }
+
+    // const removeVisibilityChange = () => {
+    //     window.removeEventListener('visibilitychange', handleVisibilityChange);
+    
+    // }
+
+    // const handleVisibilityChange = () => {
+
+    //     if (document.hidden) {
+
+    //         clearTimeout(timer);
+    //         timer = null;
+
+    //         return;
+    //     } 
+            
+    //     if (timer == null) makeMove();
+    // }
 
     const getMoves = (solution) => {
 
@@ -440,10 +436,10 @@ const aiPlay = () => {
 
         for (let i = 0; i < solution.length; i += 4) {
 
-            let move = [
-                [Number(solution[i]), Number(solution[i + 1])],
-                [Number(solution[i + 2]), Number(solution[i + 3])]
-            ];
+            let move = {
+                from: {r: Number(solution[i]), c: Number(solution[i + 1])},
+                to: {r: Number(solution[i + 2]), c: Number(solution[i + 3])}
+            };
 
             moves.push(move);
         }
@@ -453,202 +449,205 @@ const aiPlay = () => {
 
     const makeMove = () => {
 
-        let squares = document.querySelectorAll('.square');
+        let size = 7;
+        let holes = document.querySelectorAll('.hole');
 
-        if (moves.length == 0) console.timeEnd('timer2'); //
+        // if (document.hidden) return;
 
-        if (document.hidden) return;
-
-        // if (moves.length == 0) {
-        //     removeVisibilityChange();
-        //     enableReset();    
-        //     return;
-        // }
-
-        let [from, to] = moves.shift();
-
-        console.log(orientation);
+        let {from, to} = moves.shift();
 
         switch (orientation) {
 
             case 'rotate90':
 
-                from[0] = size - 1 - from[0]; 
-                to[0] = size - 1 - to[0]; 
+                from.r = size - 1 - from.r; 
+                to.r = size - 1 - to.r; 
 
                 break;
 
             case 'rotate180':
 
-                [from[0], from[1]] = [from[1], from[0]]; 
-                [to[0], to[1]] = [to[1], to[0]]; 
+                [from.r, from.c] = [from.c, from.r]; 
+                [to.r, to.c] = [to.c, to.r]; 
+
 
                 break;
 
             case 'rotate270':
 
-                [from[0], from[1]] = [from[1], size - 1 - from[0]]; 
-                [to[0], to[1]] = [to[1], size - 1 - to[0]]; 
+                [from.r, from.c] = [from.c, size - 1 - from.r]; 
+                [to.r, to.c] = [to.c, size - 1 - to.r]; 
 
                 break;
 
             case 'flip':
 
-                from[1] = size - 1 - from[1]; 
-                to[1] = size - 1 - to[1]; 
+                from.c = size - 1 - from.c; 
+                to.c = size - 1 - to.c; 
 
                 break;
 
             case 'flip90':
 
-                from[1] = size - 1 - from[1]; 
-                to[1] = size - 1 - to[1]; 
+                from.c = size - 1 - from.c; 
+                to.c = size - 1 - to.c; 
 
-                from[0] = size - 1 - from[0]; 
-                to[0] = size - 1 - to[0]; 
+                from.r = size - 1 - from.r; 
+                to.r = size - 1 - to.r; 
 
                 break;
 
             case 'flip180':
 
-                from[1] = size - 1 - from[1]; 
-                to[1] = size - 1 - to[1];  
+                from.c = size - 1 - from.c; 
+                to.c = size - 1 - to.c;
 
-                [from[0], from[1]] = [from[1], from[0]]; 
-                [to[0], to[1]] = [to[1], to[0]];
+                [from.r, from.c] = [from.c, from.r]; 
+                [to.r, to.c] = [to.c, to.r];
 
                 break;
 
             case 'flip270':
 
-                from[1] = size - 1 - from[1]; 
-                to[1] = size - 1 - to[1]; 
+                from.c = size - 1 - from.c; 
+                to.c = size - 1 - to.c; 
 
-                [from[0], from[1]] = [from[1], size - 1 - from[0]]; 
-                [to[0], to[1]] = [to[1], size - 1 - to[0]]; 
+                [from.r, from.c] = [from.c, size - 1 - from.r]; 
+                [to.r, to.c] = [to.c, size - 1 - to.r]; 
 
                 break;
                 
-            case 'original':
+            default:
                 break;
         }
 
-        let peg = document.querySelector(`.peg[data-n='${from[0] * size + from[1]}']`);
-        let peg2 = document.querySelector(`.peg[data-n='${(from[0] + to[0]) / 2 * size + (from[1] + to[1]) / 2}']`);
+        let peg = document.querySelector(`.peg[data-n='${from.r * size + from.c}']`);
+        let peg0 = document.querySelector(`.peg[data-n='${(from.r + to.r) / 2 * size + (from.c + to.c) / 2}']`);
         let style = window.getComputedStyle(peg);
         let matrix = new DOMMatrix(style.transform);
-        let rectPeg = peg.getBoundingClientRect();
-        let rectPlace = squares[to[0] * size + to[1]].firstChild.getBoundingClientRect();
+        let pegRect = peg.getBoundingClientRect();
+        let holeRect = holes[to.r * size + to.c].getBoundingClientRect();
+        let offsetLeft = pegRect.left - holeRect.left;
+        let offsetTop = pegRect.top - holeRect.top;
 
-        peg.dataset.n = to[0] * size + to[1];
+        holes[to.r * size + to.c].classList.remove('empty');
+        holes[from.r * size + from.c].classList.add('empty');
+        holes[(from.r + to.r) / 2 * size + (from.c + to.c) / 2].classList.add('empty');
+
+        peg.dataset.n = to.r * size + to.c;
         peg.classList.add('move-ai');
-        peg.firstElementChild.classList.add('zoom-ai');
-        
-        squares[to[0] * size + to[1]].firstChild.classList.remove('empty');
-        squares[from[0] * size + from[1]].firstChild.classList.add('empty');
-        squares[(from[0] + to[0]) / 2 * size + (from[1] + to[1]) / 2].firstChild.classList.add('empty');
+        peg0.classList.add('invisible-ai');
 
-        setTimeout(() => {
-            peg2.classList.add('invisible');
-            // peg2.firstChild.classList.add('pop');
-        }, 220);
-
-        peg.addEventListener('animationend', e => {
-
-            let peg = e.currentTarget;
+        peg.addEventListener('animationend', async () => {
     
             peg.classList.remove('move-ai');
-            peg.firstChild.classList.remove('zoom-ai');
-            // peg2.classList.add('invisible');
-            peg2.removeAttribute('data-n');
+            peg0.removeAttribute('data-n');
+
+            if (moves.length == 0) {
+
+                // removeVisibilityChange();
+                endGame(); 
+
+                return;
+            }
+
+            moves.length == 25 || moves.length == 10 ? await sleep(1500) : await sleep(500);
+
+            // await sleep(500);
+            makeMove(); 
+
+            // timer = setTimeout(makeMove, 500);
 
         }, {once: true});
-
-        peg2.addEventListener('transitionend', e => {
-
-            let peg = e.currentTarget;
+        
+        peg0.addEventListener('transitionend', () => {
             
-            peg.classList.add('removed');
-            peg.removeAttribute('style');
-
-            // peg.firstChild.classList.remove('pop');
+            peg0.classList.add('hidden', 'invisible');
+            peg0.classList.remove('invisible-ai');
+            peg0.removeAttribute('style');
     
         }, {once: true});
+
+
+        peg.style.transform = `translate(${matrix.m41 - offsetLeft}px, ${matrix.m42 - offsetTop}px)`;
+    }
+
+    const initWorker = async () => {
+
+        try {
+
+            let worker = new Worker('./js/solver.js');
+
+            worker.addEventListener('message', async (e) => {
+
+                worker.terminate();
+
+                moves = e.data;
+                
+                aiPlay.savedMoves = [...moves];
+
+                await sleep(timeDelay - (Date.now() - startTime));
+
+                makeMove();
+            });
+
+        } catch (e) {
+
+            moves = [...aiPlay.savedMoves];
     
-        peg.style.transform = `translate(${Math.round(matrix.m41 - (rectPeg.left - rectPlace.left))}px, ${Math.round(matrix.m42 - (rectPeg.top - rectPlace.top))}px)`;
+            await sleep(timeDelay - (Date.now() - startTime));
 
-        if (moves.length == 0) {
-            removeVisibilityChange();
-            setTimeout(enableReset, 500);    
-            return;
-        }
-
-        timer = setTimeout(() => makeMove(), 1000);
+            makeMove();
+        } 
     }
 
-    const initWorker = () => {
-
-        webWorker = new Worker('./js/solver.js');
-
-        webWorker.addEventListener('message', e => {
-
-            webWorker.terminate();
-
-            moves = e.data;
-            aiPlay.savedMoves = [...moves];
-
-            console.log(`Finished in ${(Date.now() - startTime) / 1000} seconds`);
-            console.log(moves.length);
-            console.log(moves);
-            // alert(`Finished in ${(Date.now() - startTime) / 1000} seconds`);
-
-            // setTimeout(makeMove, 1000 - (Date.now() - startTime));
-
-            return moves;
-        });
-    }
-
-    let startTime =  Date.now();
-    let queryString = window.location.search;
-    let urlParams = new URLSearchParams(queryString);
-    let type = urlParams.get('type');
-    let moves, webWorker, timer, orientation;
+    let startTime = Date.now();
+    // let type = demoMode();
+    let mode = demoMode();
+    let timeDelay = init ? 2000 : 1000;
+    let moves, orientation;
     let orientations = ['original', 'rotate90', 'rotate180', 'rotate270', 'flip', 'flip90', 'flip180', 'flip270'];
-    let easySolution = '1333252304243414020404245434464443452646464441436242325264626242123220222321402020224341412121232325254545433335533332343533';
-    let fastSolution = '3133523240424341454364443454626464442242022214343454545252323212204040424244262423254626262404020222212323252545454343231333';
-    let solutions = {'easy':easySolution,'fast':fastSolution};
+    let solution = '1333252304243414020404245434464443452646464441436242325264626242123220222321402020224341412121232325254545433335533332343533';
+    // let fastSolution = '3133523240424341454364443454626464442242022214343454545252323212204040424244262423254626262404020222212323252545454343231333';
+    // let solutions = {'easy':easySolution,'fast':fastSolution};
 
-    document.documentElement.style.setProperty('--non-demo', 0);
-
-    setVisibilityChange();
+    // setVisibilityChange();
     disableReset();
     disableTouch();
 
-    if (type == 'ai') {
+    if (mode == 'ai') {
 
         orientation = orientations[Math.floor(Math.random() * 8)];
 
-        moves = aiPlay.savedMoves == undefined ? initWorker() : [...aiPlay.savedMoves];
+        initWorker();
 
     } else {
 
-        orientation = orientations[0];
+        orientation = 'original';
 
-        moves = getMoves(solutions[type]);
+        // moves = getMoves(solutions[type]);
+        moves = getMoves(solution);
+
+        await sleep(timeDelay - (Date.now() - startTime));
+
+        makeMove();
     }
-
-    setTimeout(makeMove, 1000 - (Date.now() - startTime));
 }
 
 const demoMode = () => {
 
     let queryString = window.location.search;
     let urlParams = new URLSearchParams(queryString);
-    let mode = urlParams.get('mode');
-    
-    return mode == 'demo';
+    // let demo = urlParams.get('mode') == 'demo';
+    // let type = urlParams.get('type');
 
-    // return true;
+    let mode = urlParams.get('mode');
+
+    // return demo ? type : null;
+
+    // return mode == 'ai' || mode == 'easy' ? mode : null;
+
+    return true;
 }
 
 const enableReset = () => {
@@ -656,17 +655,22 @@ const enableReset = () => {
     let button = document.querySelector('.reset');
 
     button.classList.add('enabled');
-    button.addEventListener('touchstart', newGame);
-    button.addEventListener('mousedown', newGame);
+    button.addEventListener('touchstart', resetGame);
+    button.addEventListener('mousedown', resetGame);
+
+    console.log('enableReset');
 }
 
 const disableReset = () => {
 
     let button = document.querySelector('.reset');
 
-    button.classList.remove('enabled');
-    button.removeEventListener('touchstart', newGame);
-    button.removeEventListener('mousedown', newGame);
+    // if (demoMode()) button.classList.remove('enabled');
+
+    button.removeEventListener('touchstart', resetGame);
+    button.removeEventListener('mousedown', resetGame);
+
+    console.log('disableReset');
 }
 
 const enableTouch = () => {
@@ -674,15 +678,11 @@ const enableTouch = () => {
     let pegs = document.querySelectorAll('.peg');
     
     pegs.forEach(peg => {
-
         peg.addEventListener('touchstart', startMove);
-        peg.addEventListener('touchend', removeZoom);
-        // peg.addEventListener('touchcancel', removeZoom);
-
         peg.addEventListener('mousedown', startMove);
-        peg.addEventListener('mouseup', removeZoom);
-        // peg.addEventListener('mouseleave', removeZoom);
     });
+
+    window.addEventListener('orientationchange', placePeg);
 }
 
 const disableTouch = () => {
@@ -691,35 +691,34 @@ const disableTouch = () => {
 
     pegs.forEach(peg => {
         peg.removeEventListener('touchstart', startMove);
-        peg.removeEventListener('touchend', removeZoom);
-        // peg.removeEventListener('touchcancel', removeZoom);
-
         peg.removeEventListener('mousedown', startMove);
-        peg.removeEventListener('mouseup', removeZoom);
-        // peg.removeEventListener('mouseleave', removeZoom);
     });
 }
 
-const disableTapZoom = () => {
+const disableScreen = () => {
 
     const preventDefault = (e) => e.preventDefault();
 
-    document.body.addEventListener('touchstart', preventDefault, {passive: false});
-    document.body.addEventListener('mousedown', preventDefault, {passive: false});
+    document.addEventListener('touchstart', preventDefault, {passive: false});
+    document.addEventListener('mousedown', preventDefault, {passive: false});
+}
+
+const registerServiceWorker = () => {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');
 }
 
 const init = () => {
 
-    disableTapZoom();
+    // registerServiceWorker();
+    disableScreen();
     setBoardSize();
     fillBoard();
     showBoard();
-    enableReset();
     enableTouch();
 
-    console.log(demoMode());
+    enableReset(); //
 
-    if (demoMode()) setTimeout(aiPlay, 0);
+    demoMode() ? aiPlay() : enableReset();
 }
 
 window.onload = () => document.fonts.ready.then(init);
