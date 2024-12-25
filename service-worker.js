@@ -1,10 +1,10 @@
-const cacheName = 'cache-v1';
+const cacheName = 'cache-v2';
 const files = [
   '/solitaire/',
   'index.html',
   'css/style.css',
   'js/solitaire.js',
-  'images/restart.svg',
+  'images/arrows.svg',
   'fonts/roboto-regular.woff2',
   'fonts/roboto-bold.woff2'
 ];

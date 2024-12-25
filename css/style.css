@@ -18,12 +18,12 @@
 
 body {
   font-family: 'Roboto', sans-serif;
-  cursor: default;
-  transition: opacity 2s ease;
-  overflow: hidden;
   margin: 0;
   opacity: 0;
+  cursor: default;
+  overflow: hidden;
   background-color: var(--color);
+  transition: opacity 2s ease;
 }
 
 .visible {
@@ -52,12 +52,9 @@ body {
 h1 {
   font-weight: bold;
   text-align: center;
-  color: var(--color);
   color: white;
   font-size: calc(var(--board-size) / 3.75);
   margin-top: 0;
-  /* margin-top: -10px; */
-  /* margin-bottom: 8px; */
   transition: color 0.3s linear;
 } 
 
@@ -162,14 +159,13 @@ h1 {
 }
 
 .invisible-ai {
-  /* transition: opacity 0.5s 0.25s ease; */
   transition: opacity 0.01s 0.22s ease;
   opacity: 0;
 }
 
-.hidden {
+.hidden, .removed {
   visibility: hidden;
-}
+} 
 
 .pop {
   transform: scale(1.2);
@@ -197,6 +193,16 @@ h1 {
 
 .blink {
   animation: blink 0.25s ease-in-out forwards;
+}
+
+#designed {
+  text-align: center;
+  position: relative;
+  align-self: auto;
+  color: white;
+  font-size: calc(var(--board-size) / 38);
+  margin-top: 10px;
+  transition: color 0.3s linear;
 }
 
 @keyframes zoom-ai {
@@ -236,20 +242,6 @@ h1 {
   } 
 }
 
-#designed {
-  text-align: center;
-  position: relative;
-  align-self: auto;
-  color: white;
-  /* font-size: 9px;  */
-  font-size: calc(var(--board-size) / 38);
-
-  /* margin-top: -12px; */
-  /* margin-top: -15px; */
-  margin-top: 10px;
-  transition: color 0.3s linear;
-}
-
 @media (orientation: landscape) and (max-height: 460px) {
 
   h1 {
@@ -285,10 +277,10 @@ h1 {
   }
 
   .board {
-      width: var(--board-size-big);
-      height: var(--board-size-big);
-      padding: calc(var(--board-size-big) / 7 * 0.1);
-      gap: calc(var(--board-size-big) / 7 * 0.2);
+    width: var(--board-size-big);
+    height: var(--board-size-big);
+    padding: calc(var(--board-size-big) / 7 * 0.1);
+    gap: calc(var(--board-size-big) / 7 * 0.2);
   }
 
   .hole, .peg, .peg > div {
@@ -305,8 +297,6 @@ h1 {
 
   #designed {
     font-size: 11px; 
-    /* margin-top: -16.9px; */
-    /* margin-top: -16px; */
     line-height: 0.9;
   }
 }

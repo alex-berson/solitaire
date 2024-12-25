@@ -1,8 +1,8 @@
-const getBoardHash = (board) => board.map(r => r.join('')).join('');
+const getBoardHash = (board) => board.map(row => row.join('')).join('');
 
 const initBoard = () => {
     
-    return [[2, 2, 1, 1, 1, 2, 2],                     
+    return [[2, 2, 1, 1, 1, 2, 2],
             [2, 2, 1, 1, 1, 2, 2],
             [1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 0, 1, 1, 1],
@@ -51,8 +51,8 @@ const makeMove = (board, move) => {
 const dfs = () => {
 
     let board = initBoard();
-    let stack = [[board, []]];
     let visited = new Set();
+    let stack = [[board, []]];
 
     while (stack.length > 0) {
 
@@ -67,7 +67,7 @@ const dfs = () => {
 
         if (moves.length == 0) {
 
-            let remainingPegs = board.flat().filter(x => x == 1).length;
+            let remainingPegs = board.flat().filter(hole => hole == 1).length;
 
             if (remainingPegs == 1 && board[3][3] == 1) return path;
 

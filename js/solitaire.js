@@ -40,27 +40,22 @@ const fillBoard = () => {
 const startMove = (e) => {
 
     let peg = e.currentTarget;
+    let style = window.getComputedStyle(peg);
+    let matrix = new DOMMatrix(style.transform);
 
     if (peg.classList.contains('invisible') || document.querySelector('.move')) return;
 
-    // if (peg.matches('.invisible, .settle') || document.querySelector('.move')) return;
-
-    // disableReset();
+    peg.style.transform = `translate(${matrix.m41}px, ${matrix.m42}px)`;
 
     peg.classList.add('move', 'zoom');
-
-    // peg.classList.add('move');
-
-    peg.classList.remove('settle'); //
-    // peg.firstChild.style.transform += 'scale(1.3)'; //
-
+    peg.classList.remove('settle');
 
     if (e.type == 'touchstart') {
 
         let n = [...e.touches].findIndex(touch => e.currentTarget == touch.target);
 
-        peg.dataset.x0 = peg.dataset.x = e.touches[n].clientX;
-        peg.dataset.y0 = peg.dataset.y = e.touches[n].clientY;
+        peg.dataset.x = e.touches[n].clientX;
+        peg.dataset.y = e.touches[n].clientY;
 
         peg.addEventListener('touchmove', touchMove);
         peg.addEventListener('touchend', endMove);
@@ -68,8 +63,8 @@ const startMove = (e) => {
 
     } else {
 
-        peg.dataset.x0 = peg.dataset.x = e.clientX
-        peg.dataset.y0 = peg.dataset.y = e.clientY
+        peg.dataset.x = e.clientX
+        peg.dataset.y = e.clientY
 
         document.addEventListener('mousemove', mouseMove);
         document.addEventListener('mouseup', endMove);
@@ -82,8 +77,8 @@ const touchMove = (e) => {
     let style = window.getComputedStyle(peg);
     let matrix = new DOMMatrix(style.transform);
     let n = [...e.touches].findIndex(touch => e.currentTarget == touch.target);
-    let dx = e.touches[n].clientX - peg.dataset.x;
-    let dy = e.touches[n].clientY - peg.dataset.y;
+    let dx = e.touches[n].clientX - Number(peg.dataset.x);
+    let dy = e.touches[n].clientY - Number(peg.dataset.y);
 
     peg.dataset.x = e.touches[n].clientX;
     peg.dataset.y = e.touches[n].clientY;
@@ -96,8 +91,8 @@ const mouseMove = (e) => {
     let peg = document.querySelector('.move');
     let style = window.getComputedStyle(peg);
     let matrix = new DOMMatrix(style.transform);
-    let dx = e.clientX - peg.dataset.x;
-    let dy = e.clientY - peg.dataset.y;
+    let dx = e.clientX - Number(peg.dataset.x);
+    let dy = e.clientY - Number(peg.dataset.y);
 
     peg.dataset.x = e.clientX;
     peg.dataset.y = e.clientY;
@@ -132,59 +127,36 @@ const endMove = () => {
 
     let holes = document.querySelectorAll('.hole');
     let peg = document.querySelector('.move');
-    let i1 = Number(peg.dataset.n);
+    let n1 = Number(peg.dataset.n);
     let destHoles = getDestHoles(peg);
-
-
-    // disableTouch();
 
     for (let hole of destHoles) {
 
-        let i2 = [...holes].indexOf(hole);
-        let i0 = Math.abs(i1 - i2) / 2 + Math.min(i1, i2);
-        let peg0 = document.querySelector(`[data-n="${i0}"]`);
+        let n2 = [...holes].indexOf(hole);
+        let n0 = Math.abs(n1 - n2) / 2 + Math.min(n1, n2);
+        let removedPeg = document.querySelector(`[data-n="${n0}"]`);
 
-        if ((Math.abs(i1 - i2) == 14 ||
-            (Math.abs(i1 - i2) == 2 && Math.abs(i1 % 7 - i2 % 7) == 2)) &&
-            peg0 != null) {
+        if ((Math.abs(n1 - n2) == 14 ||
+            (Math.abs(n1 - n2) == 2 && Math.abs(n1 % 7 - n2 % 7) == 2)) &&
+            removedPeg != null) {
 
-            // placePeg(hole);
+            peg.dataset.n = n2;
+            removedPeg.classList.add('invisible');
+            removedPeg.removeAttribute('data-n');
 
-            peg.dataset.n = i2;
-            peg0.classList.add('invisible');
-            peg0.removeAttribute('data-n');
-
-            holes[i0].classList.add('empty');
-            holes[i1].classList.add('empty');
-            holes[i2].classList.remove('empty');
+            holes[n0].classList.add('empty');
+            holes[n1].classList.add('empty');
+            holes[n2].classList.remove('empty');
             
-            peg0.addEventListener('transitionend', () => {
-        
-                peg0.classList.add('hidden');
-                peg0.removeAttribute('style');
-
-                // if (!gameWon() && !gameLost()) enableReset();
-                    
-            }, {once: true});
+            removedPeg.addEventListener('transitionend', () => removedPeg.classList.add('removed'), {once: true});
 
             placePeg(hole, gameLost() || gameWon());
-
-            // if (gameLost() || gameWon()) disableTouch(); //
-
-            // placePeg(hole);
-
-            // console.log(gameLost(), gameWon());
-
-            // if (gameLost() || gameWon())  endGame();
 
             return;
         }
     }
 
     placePeg();
-
-    // await placePeg();
-    // enableReset();
 }
 
 const placePeg = async (hole = null, end = false) => {
@@ -195,22 +167,12 @@ const placePeg = async (hole = null, end = false) => {
     if (end) disableTouch();
 
     let n = Number(peg.dataset.n);
-    let hole0 = document.querySelectorAll('.hole')[n];
+    let baseHole = document.querySelectorAll('.hole')[n];
 
-    if (hole == null || hole instanceof Event) hole = hole0;
-
-    // console.log(gameLost(), gameWon());
+    if (hole == null || hole instanceof Event) hole = baseHole;
 
     peg.classList.add('settle'); 
     peg.classList.remove('zoom', 'move');
-
-    // console.log(peg.firstChild.style.transform);
-
-    // peg.firstChild.style.transform = peg.firstChild.style.transform.replace('scale(1.3)', '');
-
-    // peg.classList.remove('move'); //
-
-    // if (!gameWon() && !gameLost()) enableTouch(); //
 
     let style = window.getComputedStyle(peg);
     let matrix = new DOMMatrix(style.transform);
@@ -228,29 +190,13 @@ const placePeg = async (hole = null, end = false) => {
 
     peg.style.transform = `translate(${matrix.m41 - offsetLeft}px, ${matrix.m42 - offsetTop}px)`;
 
-    // await new Promise(resolve => {
+    peg.addEventListener('transitionend', () => {
 
-        peg.addEventListener('transitionend', () => {
+        peg.classList.remove('settle');
 
-            // peg.classList.remove('settle', 'move');
-            peg.classList.remove('settle');
+        if (end) endGame();
 
-            if (end) endGame();
-
-            // if (!gameWon() && !gameLost()) enableReset();
-
-            // resolve();
-    
-            // (gameLost() || gameWon()) ? endGame() : enableTouch();
-
-            // console.log(gameLost(), gameWon());
-
-            // console.log(gameLost(), gameWon());
-
-            // if (gameLost() || gameWon())  endGame();
-
-        }, {once: true});
-    // });
+    }, {once: true});
 }
 
 const gameWon = () => {
@@ -258,19 +204,14 @@ const gameWon = () => {
     let pegs = document.querySelectorAll('.peg:not(.invisible)');
 
     return pegs.length == 1;
-
-    // return true;
 }
 
 const gameLost = () => {
 
-    // let pegsEl = [...document.querySelectorAll('.peg[data-n]')];
     let pegsEl = [...document.querySelectorAll('.peg[data-n]:not(.invisible)')];
     let pegs = pegsEl.map(pegEl => Number(pegEl.dataset.n));
     let holesEl = [...document.querySelectorAll('.hole')];
     let holes = holesEl.map(hole => Boolean(hole.classList.contains('empty')));
-
-    // return true;
 
     for (let peg of pegs) {
 
@@ -304,7 +245,7 @@ const endGame = async () => {
 
     } else {
 
-        await sleep(200);
+        await sleep(demoMode() ? 100 : 200);
 
         peg.classList.add('zoom-win')
 
@@ -316,11 +257,6 @@ const endGame = async () => {
             peg.classList.remove('zoom-win');
             
             enableReset();
-
-
-            let event = new Event('touchstart', {bubbles: true, cancelable: true}); //
-
-            setTimeout(() => document.body.dispatchEvent(event), 1500); //
             
         }, {once: true});
     }
@@ -328,13 +264,13 @@ const endGame = async () => {
 
 const resetGame = (e) => {
 
-    const enabled = () => {
+    const resetAvailable = () => {
 
-        let invisible = document.querySelector('.peg.invisible:not(.hidden)');
-        let hidden = document.querySelector('.peg.hidden');
+        let disappearing = document.querySelector('.peg.invisible:not(.removed)');
+        let removed = document.querySelector('.peg.removed');
         let move = document.querySelector('.move, .settle');
 
-        if (invisible || !hidden || move) return false;
+        if (disappearing || !removed || move) return false;
 
         return true;
     } 
@@ -344,9 +280,7 @@ const resetGame = (e) => {
     let pegs = [...document.querySelectorAll('.peg.invisible')];
     let centralPeg = document.querySelector(`[data-n="${24}"]`);
 
-    if (!enabled()) return;
-
-    // if (pegs.length == 0) return;
+    if (!resetAvailable()) return;
 
     if (e.currentTarget.classList.contains('reset') && !demoMode()) {
 
@@ -359,9 +293,8 @@ const resetGame = (e) => {
 
         let board = document.querySelector('.board');
         let peg = document.createElement('div');
-        let div = document.createElement('div');
 
-        peg.appendChild(div);
+        peg.innerHTML = '<div></div>';
         peg.classList.add('peg', 'invisible');
         board.appendChild(peg);
         pegs.push(peg);
@@ -377,16 +310,18 @@ const resetGame = (e) => {
         if (n == 24 || !hole.classList.contains('empty')) continue;
 
         let peg = pegs.shift();
+        let style = window.getComputedStyle(peg);
+        let matrix = new DOMMatrix(style.transform);
         let pegRect = peg.getBoundingClientRect();
         let holeRect = hole.getBoundingClientRect();
-        let offsetLeft = holeRect.left - pegRect.left;
-        let offsetTop = holeRect.top - pegRect.top;
+        let offsetLeft = pegRect.left - holeRect.left;
+        let offsetTop = pegRect.top - holeRect.top;
 
-        peg.classList.remove('hidden', 'invisible');
+        peg.style.transform = `translate(${matrix.m41 - offsetLeft}px, ${matrix.m42 - offsetTop}px)`;
 
         peg.dataset.n = n;
-        peg.style.transform = `translate(${offsetLeft}px, ${offsetTop}px)`;
 
+        peg.classList.remove('removed', 'invisible');
         hole.classList.remove('empty');
     }
 
@@ -396,10 +331,8 @@ const resetGame = (e) => {
     document.body.classList.remove('lost');
 
     if (demoMode()) {
-
         disableReset();
         aiPlay(false);
-
         return;
     }
 
@@ -407,28 +340,6 @@ const resetGame = (e) => {
 }
 
 const aiPlay = async (init = true) => {
-
-    // const setVisibilityChange = () => {
-    //     window.addEventListener('visibilitychange', handleVisibilityChange);
-    // }
-
-    // const removeVisibilityChange = () => {
-    //     window.removeEventListener('visibilitychange', handleVisibilityChange);
-    
-    // }
-
-    // const handleVisibilityChange = () => {
-
-    //     if (document.hidden) {
-
-    //         clearTimeout(timer);
-    //         timer = null;
-
-    //         return;
-    //     } 
-            
-    //     if (timer == null) makeMove();
-    // }
 
     const getMoves = (solution) => {
 
@@ -451,69 +362,65 @@ const aiPlay = async (init = true) => {
 
         let size = 7;
         let holes = document.querySelectorAll('.hole');
-
-        // if (document.hidden) return;
-
         let {from, to} = moves.shift();
 
         switch (orientation) {
 
             case 'rotate90':
 
-                from.r = size - 1 - from.r; 
-                to.r = size - 1 - to.r; 
+                from.r = size - 1 - from.r;
+                to.r = size - 1 - to.r;
 
                 break;
 
             case 'rotate180':
 
-                [from.r, from.c] = [from.c, from.r]; 
-                [to.r, to.c] = [to.c, to.r]; 
-
+                [from.r, from.c] = [from.c, from.r];
+                [to.r, to.c] = [to.c, to.r];
 
                 break;
 
             case 'rotate270':
 
-                [from.r, from.c] = [from.c, size - 1 - from.r]; 
-                [to.r, to.c] = [to.c, size - 1 - to.r]; 
+                [from.r, from.c] = [from.c, size - 1 - from.r];
+                [to.r, to.c] = [to.c, size - 1 - to.r];
 
                 break;
 
             case 'flip':
 
-                from.c = size - 1 - from.c; 
-                to.c = size - 1 - to.c; 
+                from.c = size - 1 - from.c;
+                to.c = size - 1 - to.c;
 
                 break;
 
             case 'flip90':
 
-                from.c = size - 1 - from.c; 
-                to.c = size - 1 - to.c; 
+                from.c = size - 1 - from.c;
+                to.c = size - 1 - to.c;
 
-                from.r = size - 1 - from.r; 
-                to.r = size - 1 - to.r; 
+                from.r = size - 1 - from.r;
+                to.r = size - 1 - to.r;
 
                 break;
 
             case 'flip180':
 
-                from.c = size - 1 - from.c; 
+                from.c = size - 1 - from.c;
                 to.c = size - 1 - to.c;
 
-                [from.r, from.c] = [from.c, from.r]; 
+                [from.r, from.c] = [from.c, from.r];
                 [to.r, to.c] = [to.c, to.r];
 
                 break;
 
             case 'flip270':
 
-                from.c = size - 1 - from.c; 
-                to.c = size - 1 - to.c; 
+                from.c = size - 1 - from.c;
+                to.c = size - 1 - to.c;
 
-                [from.r, from.c] = [from.c, size - 1 - from.r]; 
-                [to.r, to.c] = [to.c, size - 1 - to.r]; 
+                [from.r, from.c] = [from.c, size - 1 - from.r];
+                [to.r, to.c] = [to.c, size - 1 - to.r];
 
                 break;
                 
@@ -522,7 +429,7 @@ const aiPlay = async (init = true) => {
         }
 
         let peg = document.querySelector(`.peg[data-n='${from.r * size + from.c}']`);
-        let peg0 = document.querySelector(`.peg[data-n='${(from.r + to.r) / 2 * size + (from.c + to.c) / 2}']`);
+        let removedPeg = document.querySelector(`.peg[data-n='${(from.r + to.r) / 2 * size + (from.c + to.c) / 2}']`);
         let style = window.getComputedStyle(peg);
         let matrix = new DOMMatrix(style.transform);
         let pegRect = peg.getBoundingClientRect();
@@ -536,38 +443,30 @@ const aiPlay = async (init = true) => {
 
         peg.dataset.n = to.r * size + to.c;
         peg.classList.add('move-ai');
-        peg0.classList.add('invisible-ai');
+        removedPeg.classList.add('invisible-ai');
 
         peg.addEventListener('animationend', async () => {
     
             peg.classList.remove('move-ai');
-            peg0.removeAttribute('data-n');
+            removedPeg.removeAttribute('data-n');
 
             if (moves.length == 0) {
-
-                // removeVisibilityChange();
                 endGame(); 
-
                 return;
             }
 
-            moves.length == 25 || moves.length == 10 ? await sleep(1500) : await sleep(500);
-
-            // await sleep(500);
-            makeMove(); 
-
-            // timer = setTimeout(makeMove, 500);
+            await sleep(100);
+            makeMove();
 
         }, {once: true});
         
-        peg0.addEventListener('transitionend', () => {
+        removedPeg.addEventListener('transitionend', () => {
             
-            peg0.classList.add('hidden', 'invisible');
-            peg0.classList.remove('invisible-ai');
-            peg0.removeAttribute('style');
+            removedPeg.classList.add('removed', 'invisible');
+            removedPeg.classList.remove('invisible-ai');
+            removedPeg.removeAttribute('style');
     
         }, {once: true});
-
 
         peg.style.transform = `translate(${matrix.m41 - offsetLeft}px, ${matrix.m42 - offsetTop}px)`;
     }
@@ -602,16 +501,12 @@ const aiPlay = async (init = true) => {
     }
 
     let startTime = Date.now();
-    // let type = demoMode();
     let mode = demoMode();
     let timeDelay = init ? 2000 : 1000;
     let moves, orientation;
     let orientations = ['original', 'rotate90', 'rotate180', 'rotate270', 'flip', 'flip90', 'flip180', 'flip270'];
     let solution = '1333252304243414020404245434464443452646464441436242325264626242123220222321402020224341412121232325254545433335533332343533';
-    // let fastSolution = '3133523240424341454364443454626464442242022214343454545252323212204040424244262423254626262404020222212323252545454343231333';
-    // let solutions = {'easy':easySolution,'fast':fastSolution};
-
-    // setVisibilityChange();
+   
     disableReset();
     disableTouch();
 
@@ -624,8 +519,6 @@ const aiPlay = async (init = true) => {
     } else {
 
         orientation = 'original';
-
-        // moves = getMoves(solutions[type]);
         moves = getMoves(solution);
 
         await sleep(timeDelay - (Date.now() - startTime));
@@ -638,16 +531,9 @@ const demoMode = () => {
 
     let queryString = window.location.search;
     let urlParams = new URLSearchParams(queryString);
-    // let demo = urlParams.get('mode') == 'demo';
-    // let type = urlParams.get('type');
-
     let mode = urlParams.get('mode');
 
-    // return demo ? type : null;
-
-    // return mode == 'ai' || mode == 'easy' ? mode : null;
-
-    return true;
+    return mode == 'ai' || mode == 'easy' ? mode : null;
 }
 
 const enableReset = () => {
@@ -657,20 +543,16 @@ const enableReset = () => {
     button.classList.add('enabled');
     button.addEventListener('touchstart', resetGame);
     button.addEventListener('mousedown', resetGame);
-
-    console.log('enableReset');
 }
 
 const disableReset = () => {
 
     let button = document.querySelector('.reset');
 
-    // if (demoMode()) button.classList.remove('enabled');
+    if (demoMode()) button.classList.remove('enabled');
 
     button.removeEventListener('touchstart', resetGame);
     button.removeEventListener('mousedown', resetGame);
-
-    console.log('disableReset');
 }
 
 const enableTouch = () => {
@@ -709,14 +591,12 @@ const registerServiceWorker = () => {
 
 const init = () => {
 
-    // registerServiceWorker();
+    registerServiceWorker();
     disableScreen();
     setBoardSize();
     fillBoard();
     showBoard();
     enableTouch();
-
-    enableReset(); //
 
     demoMode() ? aiPlay() : enableReset();
 }
