@@ -251,7 +251,7 @@ h1 {
 
 @media (max-width: 320px), (max-height: 320px) {
 
-  .board{
+  .board {
     margin-top: -15px;
   } 
 }
